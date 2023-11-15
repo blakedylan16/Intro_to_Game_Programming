@@ -8,15 +8,23 @@
 
 /* Begin PBXBuildFile section */
 		B65174D82AD4AFFE00457720 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B65174D72AD4AFFE00457720 /* main.cpp */; };
+		B65174E32AD4B0B600457720 /* ShaderProgram.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B65174DF2AD4B0B600457720 /* ShaderProgram.cpp */; };
+		B65174E62AD4B21400457720 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B65174E52AD4B21400457720 /* OpenGL.framework */; };
+		B65174E82AD4B21E00457720 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B65174E72AD4B21E00457720 /* Cocoa.framework */; };
+		B65174EC2AD4B26A00457720 /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B65174E92AD4B26A00457720 /* SDL2.framework */; };
+		B65174ED2AD4B26A00457720 /* SDL2_mixer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B65174EA2AD4B26A00457720 /* SDL2_mixer.framework */; };
+		B65174EE2AD4B26A00457720 /* SDL2_image.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B65174EB2AD4B26A00457720 /* SDL2_image.framework */; };
+		B65174EF2AD4B2C300457720 /* shaders in CopyFiles */ = {isa = PBXBuildFile; fileRef = B65174E12AD4B0B600457720 /* shaders */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		B65174D22AD4AFFE00457720 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
+			dstPath = "";
+			dstSubfolderSpec = 6;
 			files = (
+				B65174EF2AD4B2C300457720 /* shaders in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
@@ -25,6 +33,16 @@
 /* Begin PBXFileReference section */
 		B65174D42AD4AFFE00457720 /* SDLSimple */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SDLSimple; sourceTree = BUILT_PRODUCTS_DIR; };
 		B65174D72AD4AFFE00457720 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		B65174DE2AD4B0B600457720 /* glm */ = {isa = PBXFileReference; lastKnownFileType = folder; path = glm; sourceTree = "<group>"; };
+		B65174DF2AD4B0B600457720 /* ShaderProgram.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ShaderProgram.cpp; sourceTree = "<group>"; };
+		B65174E02AD4B0B600457720 /* ShaderProgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShaderProgram.h; sourceTree = "<group>"; };
+		B65174E12AD4B0B600457720 /* shaders */ = {isa = PBXFileReference; lastKnownFileType = folder; path = shaders; sourceTree = "<group>"; };
+		B65174E22AD4B0B600457720 /* stb_image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stb_image.h; sourceTree = "<group>"; };
+		B65174E52AD4B21400457720 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		B65174E72AD4B21E00457720 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		B65174E92AD4B26A00457720 /* SDL2.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2.framework; path = ../../../../../Library/Frameworks/SDL2.framework; sourceTree = "<group>"; };
+		B65174EA2AD4B26A00457720 /* SDL2_mixer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2_mixer.framework; path = ../../../../../Library/Frameworks/SDL2_mixer.framework; sourceTree = "<group>"; };
+		B65174EB2AD4B26A00457720 /* SDL2_image.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL2_image.framework; path = ../../../../../Library/Frameworks/SDL2_image.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +50,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B65174EC2AD4B26A00457720 /* SDL2.framework in Frameworks */,
+				B65174ED2AD4B26A00457720 /* SDL2_mixer.framework in Frameworks */,
+				B65174EE2AD4B26A00457720 /* SDL2_image.framework in Frameworks */,
+				B65174E82AD4B21E00457720 /* Cocoa.framework in Frameworks */,
+				B65174E62AD4B21400457720 /* OpenGL.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,6 +66,7 @@
 			children = (
 				B65174D62AD4AFFE00457720 /* SDLSimple */,
 				B65174D52AD4AFFE00457720 /* Products */,
+				B65174E42AD4B21300457720 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -57,9 +81,26 @@
 		B65174D62AD4AFFE00457720 /* SDLSimple */ = {
 			isa = PBXGroup;
 			children = (
+				B65174DE2AD4B0B600457720 /* glm */,
+				B65174DF2AD4B0B600457720 /* ShaderProgram.cpp */,
+				B65174E02AD4B0B600457720 /* ShaderProgram.h */,
+				B65174E12AD4B0B600457720 /* shaders */,
+				B65174E22AD4B0B600457720 /* stb_image.h */,
 				B65174D72AD4AFFE00457720 /* main.cpp */,
 			);
 			path = SDLSimple;
+			sourceTree = "<group>";
+		};
+		B65174E42AD4B21300457720 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B65174EB2AD4B26A00457720 /* SDL2_image.framework */,
+				B65174EA2AD4B26A00457720 /* SDL2_mixer.framework */,
+				B65174E92AD4B26A00457720 /* SDL2.framework */,
+				B65174E72AD4B21E00457720 /* Cocoa.framework */,
+				B65174E52AD4B21400457720 /* OpenGL.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -120,6 +161,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B65174D82AD4AFFE00457720 /* main.cpp in Sources */,
+				B65174E32AD4B0B600457720 /* ShaderProgram.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -238,9 +280,21 @@
 		B65174DC2AD4AFFE00457720 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = DUJ56VF9FQ;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				"EXCLUDED_ARCHS[sdk=*]" = arg64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					/Library/Frameworks/SDL2.framework/Versions/A/Headers,
+					/Library/Frameworks/SDL2_image.framework/Versions/A/Headers,
+					/Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 11.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -248,9 +302,20 @@
 		B65174DD2AD4AFFE00457720 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = DUJ56VF9FQ;
-				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					/Library/Frameworks/SDL2.framework/Versions/A/Headers,
+					/Library/Frameworks/SDL2_image.framework/Versions/A/Headers,
+					/Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers,
+				);
+				MACOSX_DEPLOYMENT_TARGET = 11.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
