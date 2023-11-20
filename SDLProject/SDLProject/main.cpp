@@ -1,5 +1,13 @@
-// The old stuff
+/*
+ Author: Dylan Blake
+ Assignment: Simple 2D Scene
+ I pledge that I have completed this assignment without collaborating w/
+ anyone else, in conformance w/ the NYU School of Engineering Policies
+ and Procedures on Academic Misconduct.
+ */
+
 #define GL_SILENCE_DEPRECIATION
+#define STB_IMAGE_IMPLEMENTATION
 #define GL_GLEXT_PROTOTYPES 1
 #define LOG(argument) std::cout << argument << '\n'
 
@@ -9,15 +17,16 @@
 
 #include <SDL.h>
 #include <SDL_opengl.h>
+#include "glm/mat4x4.hpp"               // 4x4 Matrix
+#include "glm/gtc/matrix_transform.hpp" // Matrix transformation methods
+#include "ShaderProgram.h"
+#include "stb_image.h"
 
-#include "glm/mat4x4.hpp"                // 4x4 Matrix
-#include "glm/gtc/matrix_transform.hpp"  // Matrix transformation methods
-#include "ShaderProgram.h"               // We'll talk about these later in the course
 
-//#include "helper.cpp"
-void print_matrix(glm::mat4 &matrix, int size);
-
-const float MILLISECONDS_IN_SECOND = 1000.0;
+enum Coordinate {
+    x_coordinate,   // 0
+    y_coordinate    // 1
+};
 
 // Our window dimensions
 const int WINDOW_WIDTH  = 640,
@@ -37,131 +46,74 @@ const int VIEWPORT_X      = 0,
 
 // Our shader filepaths; these are necessary for a number of things
 // Not least, to actually draw our shapes
-const char V_SHADER_PATH[] = "shaders/vertex.glsl";
-const char F_SHADER_PATH[] = "shaders/fragment.glsl";
+const char V_SHADER_PATH[] = "shaders/vertex_textured.glsl";
+const char F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 
-const float TRIANGLE_RED      = 1.0f,
-          TRIANGLE_BLUE     = 0.4f,
-          TRIANGLE_GREEN    = 0.4f,
-          TRIANGLE_OPACITY  = 1.0f;
-
+const float MILLISECONDS_IN_SECOND = 1000.0;
 const float DEGREES_PER_SECOND = 90.0f;
-const float TRAN_VALUE = 0.025f;
-const float GROWTH_FACTOR = 1.01f;
-const float SHRINK_FACTOR = .99f;
-const int MAX_FRAME = 40;
 
+const int NUMBER_OF_TEXTURES = 1;
+const GLint LEVEL_OF_DETAIL = 0,
+            TEXTURE_BORDER  = 0;
 
+const char SPRITE_1_FILEPATH[] =
+    "/Users/dylanblake/Developer/IntroGameProg/SDLProject/SDLProject/assets/Minotaur1.png";
+const char SPRITE_2_FILEPATH[] =
+    "/Users/dylanblake/Developer/IntroGameProg/SDLProject/SDLProject/assets/Minotaur2.png";
 
 SDL_Window* g_display_window;
-
 bool g_game_is_running = true;
-bool g_is_growing = true;
-int g_frame_counter = 0;
-
 
 ShaderProgram g_program;
 /*
  g_view_matrix - Defines the position of the camera
- g_model_matrix - Defines any translation, rotation, and/or scaling applied to an object
+ model matrices - Defines any translation, rotation, and/or scaling applied to an object
  g_projection_matrix - Defines the characteristics of the camera
  */
 glm::mat4 g_view_matrix,
-          g_model_matrix,
+          sprite_1_model_matrix,
+          sprite_2_model_matrix,
           g_projection_matrix,
           g_trans_matrix;
 
-float g_triangle_x = 0.0f;
-float g_triangle_rotate = 0.0f;
 float g_prev_ticks = 0.0f;
 
+GLuint sprite_1_texture_id;
+GLuint sprite_2_texture_id;
+
+// overall position
+glm::vec3 sprite_1_position = glm::vec3(1.0f, -1.0f, 0.0f);
+glm::vec3 sprite_2_position = glm::vec3(-2.0f, 0.0f, 0.0f);
+
+
+// movement tracker
+glm::vec3 sprite_1_movement;
+glm::vec3 sprite_2_movement;
+float sprite_rotate = 0.0f;
+
+float scale_speed = 1.0f;
+float scale = 1.0f;
+bool growing = true;
+
+
+float get_screen_to_ortho(float coordinate, Coordinate axis);
+
+GLuint load_texture(const char* filepath);
+
 // Part1: Initialise our program
-void initialise() {
-    SDL_Init(SDL_INIT_VIDEO);
-    g_display_window = SDL_CreateWindow("Hello, Triangle!",
-                                        SDL_WINDOWPOS_CENTERED,
-                                        SDL_WINDOWPOS_CENTERED,
-                                        WINDOW_WIDTH, WINDOW_HEIGHT,
-                                        SDL_WINDOW_OPENGL);
-    SDL_GLContext context = SDL_GL_CreateContext(g_display_window);
-    SDL_GL_MakeCurrent(g_display_window, context);
-    
-#ifdef _WINDOWS
-    glewInit();
-#endif
-    // Initialise the cameras
-    glViewport(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
-    // Load up shaders
-    g_program.Load(V_SHADER_PATH, F_SHADER_PATH);
-    
-    /*
-     Initialise our view, model, and projection matrices.
-     Orthographic means perpendicular - meaning that the camera will be
-        perpendicularly down to our triangle
-     */
-    g_view_matrix       = glm::mat4(1.0f);
-//    g_model_matrix      = glm::mat4(1.0f);
-    g_projection_matrix = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);
-//    g_trans_matrix = g_model_matrix;
-    
-    g_program.SetViewMatrix(g_view_matrix);
-    g_program.SetProjectionMatrix(g_projection_matrix);
-    
-    g_program.SetColor(TRIANGLE_RED, TRIANGLE_BLUE, TRIANGLE_GREEN, TRIANGLE_OPACITY);
-    glUseProgram(g_program.programID);
-    
-    glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
-}
+void initialise();
 
 // Part 2: Process any player input - pressed button or moved joystick
-void process_input() {
-    SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_QUIT || event.type == SDL_WINDOWEVENT_CLOSE) {
-            g_game_is_running = false;
-        }
-    }
-}
-// Part 3: Update game state given player input and previous state
-void update() {
-    float ticks = (float) SDL_GetTicks() / MILLISECONDS_IN_SECOND; // get the curr # of ticks
-    float delta_time = ticks - g_prev_ticks;        // time since last frame
-    g_prev_ticks = ticks;
-    
-    g_triangle_x += 1.0f * delta_time;
-    g_triangle_rotate += DEGREES_PER_SECOND * delta_time;
-    g_model_matrix = glm::mat4(1.0f);
-    
-    
-    g_model_matrix = glm::translate(g_model_matrix, glm::vec3(g_triangle_x, 0.0f, 0.0f));
-    g_model_matrix = glm::rotate(g_model_matrix,
-                                 glm::radians(g_triangle_rotate),
-                                 glm::vec3(0.0f, 0.0f, 1.0f));
-}
-// Part 4: Once updated, render those changes onto the screen
-void render() {
-    glClear(GL_COLOR_BUFFER_BIT);
-    
-    g_program.SetModelMatrix(g_model_matrix);
-    
-    float vertices [] =
-    {
-         0.5f, -0.5f,   // (x1, y1)
-         0.0f,  0.5f,   // (x2, y2)
-        -0.5f, -0.5f    // (x3, y3)
-    };
-    
-    
-    glVertexAttribPointer(g_program.positionAttribute, 2, GL_FLOAT, false, 0, vertices);
-    glEnableVertexAttribArray(g_program.positionAttribute);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glDisableVertexAttribArray(g_program.positionAttribute);
-    
-    SDL_GL_SwapWindow(g_display_window);
-}
-// Part 5: Shutdown protocol once game is over
-void shutdown() { SDL_Quit(); }
+void process_input();
 
+// Part 3: Update game state given player input and previous state
+void update();
+// Part 4: Once updated, render those changes onto the screen
+void render();
+// Part 5: Shutdown protocol once game is over
+void shutdown();
+
+void draw_object(glm::mat4 &object_model_matrix, GLuint &object_texture_id);
 
 // The game will reside inside the main
 int main(int argc, char* argv[]) {
@@ -181,3 +133,174 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+float get_screen_to_ortho(float coordinate, Coordinate axis)
+{
+    switch (axis) {
+        case x_coordinate:
+            return ((coordinate / WINDOW_WIDTH) * 10.0f ) - (10.0f / 2.0f);
+        case y_coordinate:
+            return (((WINDOW_HEIGHT - coordinate) / WINDOW_HEIGHT) * 7.5f) - (7.5f / 2.0);
+        default:
+            return 0.0f;
+    }
+}
+
+GLuint load_texture(const char* filepath)
+{
+    // STEP 1: Loading the image file
+    int width, height, num_components;
+    unsigned char* image = stbi_load(filepath, &width, &height, &num_components, STBI_rgb_alpha);
+    
+    if (!image) {
+        LOG("Unable to load image. Make sure the path is correct.");
+        LOG(filepath);
+        assert(false);
+        exit(1);
+    }
+    
+    // STEP 2: Generating and binding a texture ID to our image
+    GLuint textureID;
+    glGenTextures(NUMBER_OF_TEXTURES, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexImage2D(GL_TEXTURE_2D, LEVEL_OF_DETAIL, GL_RGBA, width, height, TEXTURE_BORDER, GL_RGBA, GL_UNSIGNED_BYTE, image);
+    
+    // STEP 3: Setting our texture filter parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    
+    // STEP 4: Releasing our file from memory and returning our texture id
+    stbi_image_free(image);
+    
+    return textureID;
+}
+
+void initialise() {
+    // Initialise video subsystem
+    SDL_Init(SDL_INIT_VIDEO);
+    
+    g_display_window = SDL_CreateWindow("Simple 2D!",
+                                        SDL_WINDOWPOS_CENTERED,
+                                        SDL_WINDOWPOS_CENTERED,
+                                        WINDOW_WIDTH, WINDOW_HEIGHT,
+                                        SDL_WINDOW_OPENGL);
+    SDL_GLContext context = SDL_GL_CreateContext(g_display_window);
+    SDL_GL_MakeCurrent(g_display_window, context);
+    
+#ifdef _WINDOWS
+    glewInit();
+#endif
+    // Initialise the cameras
+    glViewport(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_WIDTH, VIEWPORT_HEIGHT);
+    // Load up shaders
+    g_program.Load(V_SHADER_PATH, F_SHADER_PATH);
+    
+    g_view_matrix           = glm::mat4(1.0f);
+    sprite_1_model_matrix   = glm::mat4(1.0f);
+    sprite_2_model_matrix   = glm::mat4(1.0f);
+    g_projection_matrix     = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);
+    
+    sprite_1_movement = glm::vec3(1.2f, .4f, 0.0f);
+//    sprite_2_movement = glm::vec3(-0.5f, 0.0f, 0.0f);
+    
+    g_program.SetViewMatrix(g_view_matrix);
+    g_program.SetProjectionMatrix(g_projection_matrix);
+    
+    glUseProgram(g_program.programID);
+    
+    glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
+    
+    sprite_1_texture_id = load_texture(SPRITE_1_FILEPATH);
+    sprite_2_texture_id = load_texture(SPRITE_2_FILEPATH);
+    // enable blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void process_input() {
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SDL_QUIT || event.type == SDL_WINDOWEVENT_CLOSE) {
+            g_game_is_running = false;
+        }
+    }
+}
+
+
+void update() {
+    float ticks = (float) SDL_GetTicks() / MILLISECONDS_IN_SECOND; // get the curr # of ticks
+    float delta_time = ticks - g_prev_ticks;        // time since last frame
+    g_prev_ticks = ticks;
+    
+    sprite_1_model_matrix = glm::mat4(1.0f);
+    sprite_2_model_matrix = glm::mat4(1.0f);
+    
+    if (scale > 3) {
+        growing = false;
+        scale = 3;
+    }
+    else if (scale < 1) {
+        growing = true;
+        scale = 1;
+    }
+    if (growing) {
+        scale += scale_speed * delta_time;
+        sprite_1_position += sprite_1_movement * delta_time * 1.0f;
+    }
+    else {
+        scale -= scale_speed * delta_time;
+        sprite_1_position -= sprite_1_movement * delta_time * 1.0f;
+    }
+    glm::vec3 scale_vector = glm::vec3(scale, scale, 1.0f);
+    sprite_rotate += 90.0 * delta_time;
+    
+    sprite_2_model_matrix = glm::translate(sprite_2_model_matrix, sprite_2_position);
+    sprite_2_model_matrix = glm::scale(sprite_2_model_matrix, scale_vector);
+    sprite_2_model_matrix = glm::rotate(sprite_2_model_matrix,
+                                        glm::radians(sprite_rotate),
+                                        glm::vec3(0.0f, 0.0f, 1.0f));;
+    sprite_1_model_matrix = glm::scale(sprite_1_model_matrix,
+                                       glm::vec3(1.3f, 1.3f, 1.0f));
+    sprite_1_model_matrix = glm::translate(sprite_1_model_matrix, sprite_1_position);
+}
+
+void render() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    // Vertices
+    float vertices[] = {
+        -0.5f, -0.5f, 0.5f, -0.5f, 0.5f, 0.5f,
+        -0.5f, -0.5f, 0.5f, 0.5f, -0.5f, 0.5f
+    };
+
+    // Textures
+    float texture_coordinates[] = {
+        0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,     // triangle 1
+        0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,     // triangle 2
+    };
+        
+    glVertexAttribPointer(g_program.positionAttribute, 2, GL_FLOAT, false, 0, vertices);
+    glEnableVertexAttribArray(g_program.positionAttribute);
+        
+    glVertexAttribPointer(g_program.texCoordAttribute, 2, GL_FLOAT, false, 0, texture_coordinates);
+    glEnableVertexAttribArray(g_program.texCoordAttribute);
+        
+    // Bind texture
+    draw_object(sprite_1_model_matrix, sprite_1_texture_id);
+    draw_object(sprite_2_model_matrix, sprite_2_texture_id);
+        
+    // We disable two attribute arrays now
+    glDisableVertexAttribArray(g_program.positionAttribute);
+    glDisableVertexAttribArray(g_program.texCoordAttribute);
+        
+    SDL_GL_SwapWindow(g_display_window);
+}
+
+void draw_object(glm::mat4 &object_model_matrix, GLuint &object_texture_id) {
+    g_program.SetModelMatrix(object_model_matrix);
+    glBindTexture(GL_TEXTURE_2D, object_texture_id);
+    glDrawArrays(GL_TRIANGLES, 0, 6); // we are now drawing 2 triangles, so we use 6 instead of 3
+}
+
+void shutdown() {
+    SDL_Quit();
+}
