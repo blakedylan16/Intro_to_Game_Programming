@@ -21,6 +21,7 @@
 #include "glm/gtc/matrix_transform.hpp" // Matrix transformation methods
 #include "ShaderProgram.h"
 #include "stb_image.h"
+#include <cmath>
 
 
 enum Coordinate {
@@ -93,9 +94,12 @@ glm::vec3 g_player_position = glm::vec3(0.0f, 0.0f, 0.0f);
 glm::vec3 g_player_movement;
 float player_speed = 5.0f;
 
-float scale_speed = 1.0f;
-float scale = 1.0f;
-bool growing = true;
+// oscillation effect of flower
+float rotation = 0.0f;
+float scale_speed = -1.0f;
+float scale = 1.2f;
+bool scale_switch = false;
+
 
 
 float get_screen_to_ortho(float coordinate, Coordinate axis);
@@ -249,11 +253,15 @@ void update() {
     float delta_time = ticks - g_prev_ticks;        // time since last frame
     g_prev_ticks = ticks;
     
+    rotation += 90.0f * delta_time;
+    
     g_player_position += g_player_movement * player_speed * delta_time;
+
     g_player_model_matrix = glm::mat4(1.0f);
-    
-    
     g_player_model_matrix = glm::translate(g_player_model_matrix, g_player_position);
+    g_player_model_matrix = glm::rotate(g_player_model_matrix,
+                                        glm::radians(rotation),
+                                        glm::vec3(0.0f, 1.0f, 0.0f));
 }
 
 void render() {
