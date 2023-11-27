@@ -32,6 +32,12 @@ enum Coordinate {
 const int WINDOW_WIDTH  = 640,
           WINDOW_HEIGHT = 480;
 
+const Coordinate X_COORDINATE = x_coordinate;
+const Coordinate Y_COORDINATE = y_coordinate;
+
+const float ORTHO_WIDTH  = 7.5f,
+            ORTHO_HEIGHT = 10.0f;
+
 // Background color components
 const float BG_RED     = 0.1922f,
             BG_BLUE    = 0.549f,
@@ -43,6 +49,8 @@ const int VIEWPORT_X      = 0,
           VIEWPORT_Y      = 0,
           VIEWPORT_WIDTH  = WINDOW_WIDTH,
           VIEWPORT_HEIGHT = WINDOW_HEIGHT;
+
+SDL_Joystick *player_one_controller;
 
 // Our shader filepaths; these are necessary for a number of things
 // Not least, to actually draw our shapes
@@ -58,8 +66,7 @@ const GLint LEVEL_OF_DETAIL = 0,
 
 const char SPRITE_1_FILEPATH[] =
     "/Users/dylanblake/Developer/IntroGameProg/SDLProject/SDLProject/assets/Minotaur1.png";
-const char SPRITE_2_FILEPATH[] =
-    "/Users/dylanblake/Developer/IntroGameProg/SDLProject/SDLProject/assets/Minotaur2.png";
+
 
 SDL_Window* g_display_window;
 bool g_game_is_running = true;
@@ -71,24 +78,22 @@ ShaderProgram g_program;
  g_projection_matrix - Defines the characteristics of the camera
  */
 glm::mat4 g_view_matrix,
-          sprite_1_model_matrix,
-          sprite_2_model_matrix,
+          g_player_model_matrix,
           g_projection_matrix,
           g_trans_matrix;
 
 float g_prev_ticks = 0.0f;
 
-GLuint sprite_1_texture_id;
+GLuint sprite_texture_id;
 GLuint sprite_2_texture_id;
 
 // overall position
-glm::vec3 sprite_1_position = glm::vec3(1.0f, -1.0f, 0.0f);
-glm::vec3 sprite_2_position = glm::vec3(-2.0f, 0.0f, 0.0f);
-
+glm::vec3 g_player_position = glm::vec3(0.0f, 0.0f, 0.0f);
 
 // movement tracker
-glm::vec3 sprite_1_movement;
-glm::vec3 sprite_2_movement;
+glm::vec3 g_player_movement;
+float player_speed = 3.0f;
+//glm::vec3 sprite_2_movement;
 float sprite_rotate = 0.0f;
 
 float scale_speed = 1.0f;
@@ -117,18 +122,15 @@ void draw_object(glm::mat4 &object_model_matrix, GLuint &object_texture_id);
 
 // The game will reside inside the main
 int main(int argc, char* argv[]) {
-    // Part 1
+    
     initialise();
     
     while (g_game_is_running) {
-        // Part 2
         process_input();
-        // Part 3
         update();
-        // Part 4
         render();
     }
-    // Part 5
+    
     shutdown();
     return 0;
 }
@@ -140,8 +142,7 @@ float get_screen_to_ortho(float coordinate, Coordinate axis)
             return ((coordinate / WINDOW_WIDTH) * 10.0f ) - (10.0f / 2.0f);
         case y_coordinate:
             return (((WINDOW_HEIGHT - coordinate) / WINDOW_HEIGHT) * 7.5f) - (7.5f / 2.0);
-        default:
-            return 0.0f;
+        default: return 0.0f;
     }
 }
 
@@ -176,7 +177,11 @@ GLuint load_texture(const char* filepath)
 
 void initialise() {
     // Initialise video subsystem
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
+    
+    // Open the 1st controller found. Returns null on error
+    player_one_controller = SDL_JoystickOpen(0);
+
     
     g_display_window = SDL_CreateWindow("Simple 2D!",
                                         SDL_WINDOWPOS_CENTERED,
@@ -195,11 +200,11 @@ void initialise() {
     g_program.Load(V_SHADER_PATH, F_SHADER_PATH);
     
     g_view_matrix           = glm::mat4(1.0f);
-    sprite_1_model_matrix   = glm::mat4(1.0f);
-    sprite_2_model_matrix   = glm::mat4(1.0f);
+    g_player_model_matrix   = glm::mat4(1.0f);
+//    sprite_2_model_matrix   = glm::mat4(1.0f);
     g_projection_matrix     = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);
     
-    sprite_1_movement = glm::vec3(1.2f, .4f, 0.0f);
+    g_player_movement = glm::vec3(0.0f, 0.0f, 0.0f);
 //    sprite_2_movement = glm::vec3(-0.5f, 0.0f, 0.0f);
     
     g_program.SetViewMatrix(g_view_matrix);
@@ -209,20 +214,33 @@ void initialise() {
     
     glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
     
-    sprite_1_texture_id = load_texture(SPRITE_1_FILEPATH);
-    sprite_2_texture_id = load_texture(SPRITE_2_FILEPATH);
+    sprite_texture_id = load_texture(SPRITE_1_FILEPATH);
     // enable blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void process_input() {
+    
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_QUIT || event.type == SDL_WINDOWEVENT_CLOSE) {
-            g_game_is_running = false;
+        switch (event.type) {
+            case SDL_QUIT:
+            case SDL_WINDOWEVENT_CLOSE:
+                g_game_is_running = false;
+                break;
         }
     }
+    
+    const Uint8 *key_state = SDL_GetKeyboardState(NULL);
+
+    if (key_state[SDL_SCANCODE_LEFT]) g_player_movement.x = -1.0f;
+    else if (key_state[SDL_SCANCODE_RIGHT]) g_player_movement.x = 1.0f;
+    
+    
+    // This makes sure that the player can't "cheat" their way into moving faster
+    if (glm::length(g_player_movement) > 1.0f)
+        g_player_movement = glm::normalize(g_player_movement);
 }
 
 
@@ -231,36 +249,11 @@ void update() {
     float delta_time = ticks - g_prev_ticks;        // time since last frame
     g_prev_ticks = ticks;
     
-    sprite_1_model_matrix = glm::mat4(1.0f);
-    sprite_2_model_matrix = glm::mat4(1.0f);
+    g_player_position += g_player_movement * player_speed * delta_time;
+    g_player_model_matrix = glm::mat4(1.0f);
     
-    if (scale > 3) {
-        growing = false;
-        scale = 3;
-    }
-    else if (scale < 1) {
-        growing = true;
-        scale = 1;
-    }
-    if (growing) {
-        scale += scale_speed * delta_time;
-        sprite_1_position += sprite_1_movement * delta_time * 1.0f;
-    }
-    else {
-        scale -= scale_speed * delta_time;
-        sprite_1_position -= sprite_1_movement * delta_time * 1.0f;
-    }
-    glm::vec3 scale_vector = glm::vec3(scale, scale, 1.0f);
-    sprite_rotate += 90.0 * delta_time;
     
-    sprite_2_model_matrix = glm::translate(sprite_2_model_matrix, sprite_2_position);
-    sprite_2_model_matrix = glm::scale(sprite_2_model_matrix, scale_vector);
-    sprite_2_model_matrix = glm::rotate(sprite_2_model_matrix,
-                                        glm::radians(sprite_rotate),
-                                        glm::vec3(0.0f, 0.0f, 1.0f));;
-    sprite_1_model_matrix = glm::scale(sprite_1_model_matrix,
-                                       glm::vec3(1.3f, 1.3f, 1.0f));
-    sprite_1_model_matrix = glm::translate(sprite_1_model_matrix, sprite_1_position);
+    g_player_model_matrix = glm::translate(g_player_model_matrix, g_player_position);
 }
 
 void render() {
@@ -285,8 +278,8 @@ void render() {
     glEnableVertexAttribArray(g_program.texCoordAttribute);
         
     // Bind texture
-    draw_object(sprite_1_model_matrix, sprite_1_texture_id);
-    draw_object(sprite_2_model_matrix, sprite_2_texture_id);
+    draw_object(g_player_model_matrix, sprite_texture_id);
+//    draw_object(sprite_2_model_matrix, sprite_2_texture_id);
         
     // We disable two attribute arrays now
     glDisableVertexAttribArray(g_program.positionAttribute);
@@ -302,5 +295,6 @@ void draw_object(glm::mat4 &object_model_matrix, GLuint &object_texture_id) {
 }
 
 void shutdown() {
+    SDL_JoystickClose(player_one_controller);
     SDL_Quit();
 }
