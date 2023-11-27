@@ -65,7 +65,7 @@ const GLint LEVEL_OF_DETAIL = 0,
             TEXTURE_BORDER  = 0;
 
 const char SPRITE_1_FILEPATH[] =
-    "/Users/dylanblake/Developer/IntroGameProg/SDLProject/SDLProject/assets/Minotaur1.png";
+    "/Users/dylanblake/Developer/IntroGameProg/SDLProject/SDLProject/assets/flower.png";
 
 
 SDL_Window* g_display_window;
@@ -85,16 +85,13 @@ glm::mat4 g_view_matrix,
 float g_prev_ticks = 0.0f;
 
 GLuint sprite_texture_id;
-GLuint sprite_2_texture_id;
 
 // overall position
 glm::vec3 g_player_position = glm::vec3(0.0f, 0.0f, 0.0f);
 
 // movement tracker
 glm::vec3 g_player_movement;
-float player_speed = 3.0f;
-//glm::vec3 sprite_2_movement;
-float sprite_rotate = 0.0f;
+float player_speed = 5.0f;
 
 float scale_speed = 1.0f;
 float scale = 1.0f;
@@ -182,7 +179,6 @@ void initialise() {
     // Open the 1st controller found. Returns null on error
     player_one_controller = SDL_JoystickOpen(0);
 
-    
     g_display_window = SDL_CreateWindow("Simple 2D!",
                                         SDL_WINDOWPOS_CENTERED,
                                         SDL_WINDOWPOS_CENTERED,
@@ -201,11 +197,9 @@ void initialise() {
     
     g_view_matrix           = glm::mat4(1.0f);
     g_player_model_matrix   = glm::mat4(1.0f);
-//    sprite_2_model_matrix   = glm::mat4(1.0f);
     g_projection_matrix     = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);
     
     g_player_movement = glm::vec3(0.0f, 0.0f, 0.0f);
-//    sprite_2_movement = glm::vec3(-0.5f, 0.0f, 0.0f);
     
     g_program.SetViewMatrix(g_view_matrix);
     g_program.SetProjectionMatrix(g_projection_matrix);
@@ -236,6 +230,12 @@ void process_input() {
 
     if (key_state[SDL_SCANCODE_LEFT]) g_player_movement.x = -1.0f;
     else if (key_state[SDL_SCANCODE_RIGHT]) g_player_movement.x = 1.0f;
+    else if (key_state[SDL_SCANCODE_UP]) g_player_movement.y = 1.0f;
+    else if (key_state[SDL_SCANCODE_DOWN]) g_player_movement.y = -1.0f;
+    else {
+        g_player_movement.x = 0;
+        g_player_movement.y = 0;
+    }
     
     
     // This makes sure that the player can't "cheat" their way into moving faster
