@@ -51,6 +51,11 @@ const int VIEWPORT_X      = 0,
           VIEWPORT_WIDTH  = WINDOW_WIDTH,
           VIEWPORT_HEIGHT = WINDOW_HEIGHT;
 
+SDL_Window* g_display_window;
+bool g_game_is_running = true;
+
+ShaderProgram g_program;
+
 SDL_Joystick *player_one_controller;
 
 // Our shader filepaths; these are necessary for a number of things
@@ -58,48 +63,54 @@ SDL_Joystick *player_one_controller;
 const char V_SHADER_PATH[] = "shaders/vertex_textured.glsl";
 const char F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 
-const float MILLISECONDS_IN_SECOND = 1000.0;
-const float DEGREES_PER_SECOND = 90.0f;
-
 const int NUMBER_OF_TEXTURES = 1;
 const GLint LEVEL_OF_DETAIL = 0,
             TEXTURE_BORDER  = 0;
 
-const char SPRITE_1_FILEPATH[] =
+const char FLOWER_FILEPATH[] =
     "/Users/dylanblake/Developer/IntroGameProg/SDLProject/SDLProject/assets/flower.png";
+const char CUP_FILEPATH[] =
+    "/Users/dylanblake/Developer/IntroGameProg/SDLProject/SDLProject/assets/cup.png";
+GLuint g_flower_texture_id;
+GLuint g_cup_texture_id;
 
-
-SDL_Window* g_display_window;
-bool g_game_is_running = true;
-
-ShaderProgram g_program;
 /*
  g_view_matrix - Defines the position of the camera
  model matrices - Defines any translation, rotation, and/or scaling applied to an object
  g_projection_matrix - Defines the characteristics of the camera
  */
 glm::mat4 g_view_matrix,
-          g_player_model_matrix,
+          g_flower_model_matrix,
+          g_cup_model_matrix,
           g_projection_matrix,
           g_trans_matrix;
 
+const float MILLISECONDS_IN_SECOND = 1000.0;
+const float DEGREES_PER_SECOND = 90.0f;
 float g_prev_ticks = 0.0f;
 
-GLuint sprite_texture_id;
+// INIT stuff
+const glm::vec3 FLOWER_INIT_POS = glm::vec3(0.0f, 1.0f, 0.0f),
+                FLOWER_INIT_DIM = glm::vec3(1.0f, 1.0f, 0.0f);
 
-// overall position
-glm::vec3 g_player_position = glm::vec3(0.0f, 0.0f, 0.0f);
+float cup_scale = 3.0f;
+const glm::vec3 CUP_INIT_POS = glm::vec3(0.0f, -1.6f, 0.0f),
+                CUP_INIT_DIM = glm::vec3(cup_scale, cup_scale, 0.0f);
 
-// movement tracker
-glm::vec3 g_player_movement;
-float player_speed = 5.0f;
+// general stuff
+glm::vec3 g_flower_pos      = FLOWER_INIT_POS,
+          g_flower_movement = glm::vec3(0.0f, 0.0f, 0.0f);
+float flower_speed = 5.0f;
 
 // oscillation effect of flower
-float rotation = 0.0f;
-float scale_speed = -1.0f;
-float scale = 1.2f;
-bool scale_switch = false;
+float flower_rotation = 0.0f;
 
+// post-collision effect
+const float COLLISION_FACTOR    = .6f;
+bool collision = false;
+const float shrinkage = .5f;
+float scale = 1.0f;
+glm::vec3 flower_scale_vector = glm::vec3(1.0f, 1.0f, 0.0f);
 
 
 float get_screen_to_ortho(float coordinate, Coordinate axis);
@@ -200,10 +211,23 @@ void initialise() {
     g_program.Load(V_SHADER_PATH, F_SHADER_PATH);
     
     g_view_matrix           = glm::mat4(1.0f);
-    g_player_model_matrix   = glm::mat4(1.0f);
     g_projection_matrix     = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);
     
-    g_player_movement = glm::vec3(0.0f, 0.0f, 0.0f);
+    /* ---- FLOWER ---- */
+    g_flower_model_matrix = glm::mat4(1.0f);
+    g_flower_model_matrix = glm::translate(g_flower_model_matrix, FLOWER_INIT_POS);
+    g_flower_model_matrix = glm::scale(g_flower_model_matrix, FLOWER_INIT_DIM);
+    
+    g_flower_texture_id = load_texture(FLOWER_FILEPATH);
+    /* ---------------- */
+    
+    /* ---- CUP ---- */
+    g_cup_model_matrix = glm::mat4(1.0f);
+    g_cup_model_matrix = glm::translate(g_cup_model_matrix, CUP_INIT_POS);
+    g_cup_model_matrix = glm::scale(g_cup_model_matrix, CUP_INIT_DIM);
+    
+    g_cup_texture_id = load_texture(CUP_FILEPATH);
+    /* ------------- */
     
     g_program.SetViewMatrix(g_view_matrix);
     g_program.SetProjectionMatrix(g_projection_matrix);
@@ -212,7 +236,6 @@ void initialise() {
     
     glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
     
-    sprite_texture_id = load_texture(SPRITE_1_FILEPATH);
     // enable blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -232,36 +255,61 @@ void process_input() {
     
     const Uint8 *key_state = SDL_GetKeyboardState(NULL);
 
-    if (key_state[SDL_SCANCODE_LEFT]) g_player_movement.x = -1.0f;
-    else if (key_state[SDL_SCANCODE_RIGHT]) g_player_movement.x = 1.0f;
-    else if (key_state[SDL_SCANCODE_UP]) g_player_movement.y = 1.0f;
-    else if (key_state[SDL_SCANCODE_DOWN]) g_player_movement.y = -1.0f;
+    if (key_state[SDL_SCANCODE_LEFT]) g_flower_movement.x = -1.0f;
+    else if (key_state[SDL_SCANCODE_RIGHT]) g_flower_movement.x = 1.0f;
+    else if (key_state[SDL_SCANCODE_UP]) g_flower_movement.y = 1.0f;
+    else if (key_state[SDL_SCANCODE_DOWN]) g_flower_movement.y = -1.0f;
     else {
-        g_player_movement.x = 0;
-        g_player_movement.y = 0;
+        g_flower_movement.x = 0;
+        g_flower_movement.y = 0;
     }
     
     
     // This makes sure that the player can't "cheat" their way into moving faster
-    if (glm::length(g_player_movement) > 1.0f)
-        g_player_movement = glm::normalize(g_player_movement);
+    if (glm::length(g_flower_movement) > 1.0f)
+        g_flower_movement = glm::normalize(g_flower_movement);
 }
 
 
 void update() {
+    /* ------ DELTA TIME ------ */
     float ticks = (float) SDL_GetTicks() / MILLISECONDS_IN_SECOND; // get the curr # of ticks
     float delta_time = ticks - g_prev_ticks;        // time since last frame
     g_prev_ticks = ticks;
+    /* ------------------------ */
     
-    rotation += 90.0f * delta_time;
     
-    g_player_position += g_player_movement * player_speed * delta_time;
-
-    g_player_model_matrix = glm::mat4(1.0f);
-    g_player_model_matrix = glm::translate(g_player_model_matrix, g_player_position);
-    g_player_model_matrix = glm::rotate(g_player_model_matrix,
-                                        glm::radians(rotation),
-                                        glm::vec3(0.0f, 1.0f, 0.0f));
+    /* ----- COLLISION ----- */
+    float x_dist = fabs(g_flower_pos.x - CUP_INIT_POS.x) -
+        (COLLISION_FACTOR * (FLOWER_INIT_DIM.x + CUP_INIT_DIM.x) / 2.0f);
+    float y_dist = fabs(g_flower_pos.y - CUP_INIT_POS.y) -
+        (COLLISION_FACTOR * (FLOWER_INIT_DIM.y + CUP_INIT_DIM.y) / 2.0f);
+    
+    if (x_dist < 0.0f && y_dist < 0.0f && scale > 0) {
+        LOG("COLLISION!");
+        collision = true;
+        scale -= shrinkage * delta_time;
+        flower_scale_vector *= scale;
+    }
+    /* --------------------- */
+    
+    /* ----- RESET MODEL MATRICES ----- */
+    g_flower_model_matrix   = glm::mat4(1.0f);
+    
+    g_cup_model_matrix = glm::mat4(1.0f);
+    g_cup_model_matrix = glm::translate(g_cup_model_matrix, CUP_INIT_POS);
+    g_cup_model_matrix = glm::scale(g_cup_model_matrix, CUP_INIT_DIM);
+    /* -------------------------------- */
+    
+    if (not collision) {
+        g_flower_pos += g_flower_movement * flower_speed * delta_time;
+    }
+    g_flower_model_matrix   = glm::translate(g_flower_model_matrix, g_flower_pos);
+    flower_rotation += 90.0f * delta_time;
+    g_flower_model_matrix   = glm::rotate(g_flower_model_matrix,
+                                          glm::radians(flower_rotation),
+                                          glm::vec3(0.0f, 1.0f, 0.0f));
+    g_flower_model_matrix = glm::scale(g_flower_model_matrix, flower_scale_vector);
 }
 
 void render() {
@@ -284,10 +332,10 @@ void render() {
         
     glVertexAttribPointer(g_program.texCoordAttribute, 2, GL_FLOAT, false, 0, texture_coordinates);
     glEnableVertexAttribArray(g_program.texCoordAttribute);
-        
+    
     // Bind texture
-    draw_object(g_player_model_matrix, sprite_texture_id);
-//    draw_object(sprite_2_model_matrix, sprite_2_texture_id);
+    draw_object(g_flower_model_matrix, g_flower_texture_id);
+    draw_object(g_cup_model_matrix, g_cup_texture_id);
         
     // We disable two attribute arrays now
     glDisableVertexAttribArray(g_program.positionAttribute);
