@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B66759942B167ECE00959B84 /* pong.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B66759932B167ECE00959B84 /* pong.cpp */; };
 		B67CC9A22B0488AD00EBC2B1 /* helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B67CC9A12B0488AD00EBC2B1 /* helper.cpp */; };
 		DBDF1B532323DE3F007CECB1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDF1B522323DE3F007CECB1 /* main.cpp */; };
 		DBDF1B5E2323DE8D007CECB1 /* ShaderProgram.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDF1B5D2323DE8D007CECB1 /* ShaderProgram.cpp */; };
@@ -32,6 +33,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B66759932B167ECE00959B84 /* pong.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = pong.cpp; sourceTree = "<group>"; };
 		B67CC9A12B0488AD00EBC2B1 /* helper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = helper.cpp; sourceTree = "<group>"; };
 		DBDF1B4F2323DE3F007CECB1 /* SDLProject */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SDLProject; sourceTree = BUILT_PRODUCTS_DIR; };
 		DBDF1B522323DE3F007CECB1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
@@ -90,6 +92,7 @@
 				DBDF1B5A2323DE8D007CECB1 /* stb_image.h */,
 				DBDF1B522323DE3F007CECB1 /* main.cpp */,
 				B67CC9A12B0488AD00EBC2B1 /* helper.cpp */,
+				B66759932B167ECE00959B84 /* pong.cpp */,
 			);
 			path = SDLProject;
 			sourceTree = "<group>";
@@ -164,6 +167,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DBDF1B532323DE3F007CECB1 /* main.cpp in Sources */,
+				B66759942B167ECE00959B84 /* pong.cpp in Sources */,
 				DBDF1B5E2323DE8D007CECB1 /* ShaderProgram.cpp in Sources */,
 				B67CC9A22B0488AD00EBC2B1 /* helper.cpp in Sources */,
 			);

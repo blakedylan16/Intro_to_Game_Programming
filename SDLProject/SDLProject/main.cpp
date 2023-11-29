@@ -35,9 +35,9 @@ const int WINDOW_WIDTH  = 640,
 
 const Coordinate X_COORDINATE = x_coordinate;
 const Coordinate Y_COORDINATE = y_coordinate;
-
-const float ORTHO_WIDTH  = 7.5f,
-            ORTHO_HEIGHT = 10.0f;
+//
+//const float ORTHO_WIDTH  = 10.0f,
+//            ORTHO_HEIGHT = 7.5f;
 
 // Background color components
 const float BG_RED     = 0.1922f,
@@ -93,7 +93,7 @@ float g_prev_ticks = 0.0f;
 const glm::vec3 FLOWER_INIT_POS = glm::vec3(0.0f, 1.0f, 0.0f),
                 FLOWER_INIT_DIM = glm::vec3(1.0f, 1.0f, 0.0f);
 
-float cup_scale = 3.0f;
+const float cup_scale = 3.0f;
 const glm::vec3 CUP_INIT_POS = glm::vec3(0.0f, -1.6f, 0.0f),
                 CUP_INIT_DIM = glm::vec3(cup_scale, cup_scale, 0.0f);
 
@@ -106,7 +106,7 @@ float flower_speed = 5.0f;
 float flower_rotation = 0.0f;
 
 // post-collision effect
-const float COLLISION_FACTOR    = .6f;
+const float COLLISION_FACTOR = .6f;
 bool collision = false;
 const float shrinkage = .5f;
 float scale = 1.0f;
