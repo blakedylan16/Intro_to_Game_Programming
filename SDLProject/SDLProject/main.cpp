@@ -35,9 +35,10 @@ const int WINDOW_WIDTH  = 640,
 
 const Coordinate X_COORDINATE = x_coordinate;
 const Coordinate Y_COORDINATE = y_coordinate;
-//
-//const float ORTHO_WIDTH  = 10.0f,
-//            ORTHO_HEIGHT = 7.5f;
+
+const float ORTHO_WIDTH  = 10.0f,
+            ORTHO_HEIGHT = 7.5f;
+const glm::vec3 ORTHO_DIM = glm::vec3(ORTHO_WIDTH/2, ORTHO_HEIGHT/2, 1.0f);
 
 // Background color components
 const float BG_RED     = 0.1922f,
@@ -211,7 +212,9 @@ void initialise() {
     g_program.Load(V_SHADER_PATH, F_SHADER_PATH);
     
     g_view_matrix           = glm::mat4(1.0f);
-    g_projection_matrix     = glm::ortho(-5.0f, 5.0f, -3.75f, 3.75f, -1.0f, 1.0f);
+    g_projection_matrix = glm::ortho(-ORTHO_DIM.x, ORTHO_DIM.x,
+                             -ORTHO_DIM.y, ORTHO_DIM.y,
+                             -ORTHO_DIM.z, ORTHO_DIM.z);
     
     /* ---- FLOWER ---- */
     g_flower_model_matrix = glm::mat4(1.0f);
