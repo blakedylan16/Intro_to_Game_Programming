@@ -106,7 +106,10 @@
 //          paddle_2_mov  = glm::vec3(0.0f, 0.0f, 0.0f),
 //          ball_pos      = BALL_INIT_POS,
 //          ball_mov      = glm::vec3(0.0f, 0.0f, 0.0f);
-//
+//bool paddle_1_top_bound = false,
+//     paddle_1_bott_bound = false,
+//     paddle_2_top_bound = false,
+//     paddle_2_bott_bound = false;
 //const float SPEED = 5.0f;
 //const float MAX_REL_ANGLE = 60.0f;
 //const float MAX_REL_ANGLE_RAD = MAX_REL_ANGLE * (M_PI / 180.0f);
@@ -135,8 +138,14 @@
 //void shutdown();
 //
 //void draw_object(glm::mat4 &object_model_matrix);
-//
-//void bounce(glm::vec3 &ball_mov, float relative_y, bool paddle);
+///*
+// Bounces ball after hitting a paddle. Keeps magnitude of horizontal movement
+// constant and calculates new vertical speed.
+// 
+// @param ball_mov movement vector for ball
+// @param relative_y ball's y position relative to the paddle at collision
+// */
+//void bounce(glm::vec3 &ball_mov, float relative_y);
 //
 //// The game will reside inside the main
 //int main(int argc, char* argv[]) {
@@ -300,24 +309,40 @@
 //
 //
 //    /* ----- COLLISIONS ----- */
+//    
+//    // ball-paddle bounce mechanics
 //    glm::vec2 dist_1 =
-//        glm::vec2((paddle_1_pos.x - ball_pos.x) - (PADDLE_DIM.x + BALL_DIM.x) / 2.0f,
-//                  (paddle_1_pos.y - ball_pos.y) - (PADDLE_DIM.y + BALL_DIM.y) / 2.0f);
+//        glm::vec2(std::abs(paddle_1_pos.x - ball_pos.x) - (PADDLE_DIM.x + BALL_DIM.x) / 2,
+//                  std::abs(paddle_1_pos.y - ball_pos.y) - (PADDLE_DIM.y + BALL_DIM.y) / 2);
 //    glm::vec2 dist_2 =
-//        glm::vec2((paddle_2_pos.x - ball_pos.x) - (PADDLE_DIM.x + BALL_DIM.x) / 2.0f,
-//                  (paddle_2_pos.y - ball_pos.y) - (PADDLE_DIM.y + BALL_DIM.y) / 2.0f);
-//
-//    float dist_from_bounds1 = (ORTHO_DIM.y - paddle_1_pos.y) - (PADDLE_DIM.y / 2.0f);
-//    float dist_from_bounds2 = (ORTHO_DIM.y - paddle_2_pos.y) - (PADDLE_DIM.y / 2.0f);
-//
-//    // bounce mechanics
+//        glm::vec2(std::abs(paddle_2_pos.x - ball_pos.x) - (PADDLE_DIM.x + BALL_DIM.x) / 2,
+//                  std::abs(paddle_2_pos.y - ball_pos.y) - (PADDLE_DIM.y + BALL_DIM.y) / 2);
 //    if (glm::all(glm::lessThanEqual(dist_1, ZERO))) {
-//        bounce(ball_mov, ball_pos.y - paddle_1_pos.y, true);
+//        bounce(ball_mov, ball_pos.y - paddle_1_pos.y);
+//        ball_pos.x = paddle_1_pos.x + (PADDLE_DIM.x + BALL_DIM.x) / 2;
 //    }
 //    else if (glm::all(glm::lessThanEqual(dist_2, ZERO))) {
-//
+//        bounce(ball_mov, ball_pos.y - paddle_2_pos.y);
+//        ball_pos.x = paddle_2_pos.x - (PADDLE_DIM.x + BALL_DIM.x) / 2;
 //    }
-////    /* --------------------- */
+//
+//    // ball-wall bounce mechanics
+//    if (ball_pos.y >= std::abs(ORTHO_DIM.y - BALL_DIM.y)) {
+//        ball_mov.y *= -1;
+//        ball_pos.y > 0 ? ball_pos.y = ORTHO_DIM.y - BALL_DIM.y :
+//                         ball_pos.y = -ORTHO_DIM.y + BALL_DIM.y;
+//    }
+//    
+//    // paddle-wall collisions
+//    if (paddle_1_pos.y >= std::abs(ORTHO_DIM.y - PADDLE_DIM.y)) {
+//        paddle_1_pos.y > 0 ? paddle_1_top_bound = true :
+//                             paddle_1_bott_bound = true;
+//    }
+//    
+//    /* --------------------------- */
+//    
+//    
+//    
 ////
 ////    /* ----- RESET MODEL MATRICES ----- */
 ////    g_flower_model_matrix   = glm::mat4(1.0f);
@@ -338,12 +363,9 @@
 ////    g_flower_model_matrix = glm::scale(g_flower_model_matrix, flower_scale_vector);
 //}
 //
-//void bounce(glm::vec3 &ball_mov, float relative_y, bool paddle) {
-//    if (paddle) {
-//        ball_mov.x *= -1;
-//        ball_mov.y = MAX_VERT_BALL_MOV * (relative_y / (PADDLE_DIM.y / 2));
-//    }
-//    else ball_mov.y *= -1;
+//void bounce(glm::vec3 &ball_mov, float relative_y) {
+//    ball_mov.x *= -1;
+//    ball_mov.y = MAX_VERT_BALL_MOV * (relative_y / (PADDLE_DIM.y / 2));
 //}
 //
 //void render() {
