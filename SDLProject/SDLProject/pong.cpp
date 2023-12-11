@@ -162,8 +162,7 @@
 //    return 0;
 //}
 //
-//float get_screen_to_ortho(float coordinate, Coordinate axis)
-//{
+//float get_screen_to_ortho(float coordinate, Coordinate axis) {
 //    switch (axis) {
 //        case x_coordinate:
 //            return ((coordinate / WINDOW_WIDTH) * 10.0f ) - (10.0f / 2.0f);
@@ -232,6 +231,7 @@
 //    g_proj_matr = glm::ortho(-ORTHO_DIM.x, ORTHO_DIM.x,
 //                             -ORTHO_DIM.y, ORTHO_DIM.y,
 //                             -ORTHO_DIM.z, ORTHO_DIM.z);
+//    g_program.SetColor(PADDLE_RED, PADDLE_BLUE, PADDLE_GREEN, 1.0f);
 //
 //    /* ---- PADDLE 1 ---- */
 //    paddle_1_mod_matr = glm::mat4(1.0f);
@@ -265,7 +265,6 @@
 //}
 //
 //void process_input() {
-//
 //    SDL_Event event;
 //    while (SDL_PollEvent(&event)) {
 //        switch (event.type) {
