@@ -109,16 +109,10 @@ glm::vec3 paddle_1_pos  = PADDLE_1_INIT_POS,
           paddle_2_mov  = glm::vec3(0.0f, 0.0f, 0.0f),
           ball_pos      = BALL_INIT_POS,
           ball_mov      = glm::vec3(0.0f, 0.0f, 0.0f);
-bool paddle_1_top_bound = false,
-     paddle_1_bott_bound = false,
-     paddle_2_top_bound = false,
-     paddle_2_bott_bound = false;
 const float SPEED = 6.0f;
 const float MAX_REL_ANGLE = 60.0f;
 const float MAX_REL_ANGLE_RAD = MAX_REL_ANGLE * (M_PI / 180.0f);
 const float MAX_VERT_BALL_MOV = std::tan(MAX_REL_ANGLE_RAD);
-
-
 
 const float TRAN_VALUE = 0.025f;
 const float GROWTH_FACTOR = 1.01f;
@@ -127,7 +121,6 @@ const int MAX_FRAME = 40;
 bool g_is_growing = true;
 int g_frame_counter = 0;
 float g_triangle_x = 0.0f;
-
 
 // collision
 //const float COLLISION_FACTOR = .6f;
@@ -158,7 +151,9 @@ void draw_object(glm::mat4 &object_model_matrix);
  @param ball_mov movement vector for ball
  @param relative_y ball's y position relative to the paddle at collision
  */
-void bounce(glm::vec3 &ball_mov, float relative_y);
+void bounce();
+
+void bind(glm::vec3 &paddle_pos);
 
 // The game will reside inside the main
 int main(int argc, char* argv[]) {
@@ -312,22 +307,12 @@ void update() {
     g_prev_ticks = ticks;
     /* ------------------------ */
     
-    // ball-paddle bounce mechanics
-    glm::vec2 dist_1 =
-        glm::vec2(std::abs(paddle_1_pos.x - ball_pos.x) - (PADDLE_DIM.x + BALL_DIM.x) / 2,
-                  std::abs(paddle_1_pos.y - ball_pos.y) - (PADDLE_DIM.y + BALL_DIM.y) / 2);
-    glm::vec2 dist_2 =
-        glm::vec2(std::abs(paddle_2_pos.x - ball_pos.x) - (PADDLE_DIM.x + BALL_DIM.x) / 2,
-                  std::abs(paddle_2_pos.y - ball_pos.y) - (PADDLE_DIM.y + BALL_DIM.y) / 2);
     
-    if (paddle_1_pos.y >= std::abs(ORTHO_DIM.y - PADDLE_DIM.y)) {
-        paddle_1_pos.y > 0 ? paddle_1_top_bound = true :
-                             paddle_1_bott_bound = true;
-    }
     
     /* ---- PADDLE 1 ---- */
     paddle_1_mod_matr = glm::mat4(1.0f);
     paddle_1_pos += SPEED * paddle_1_mov * delta_time;
+    bind(paddle_1_pos);
     paddle_1_mod_matr = glm::translate(paddle_1_mod_matr, paddle_1_pos);
     paddle_1_mod_matr = glm::scale(paddle_1_mod_matr, PADDLE_DIM);
     /* ---------------- */
@@ -335,19 +320,18 @@ void update() {
     /* ---- PADDLE 2 ---- */
     paddle_2_mod_matr = glm::mat4(1.0f);
     paddle_2_pos += SPEED * paddle_2_mov * delta_time;
+    bind(paddle_2_pos);
     paddle_2_mod_matr = glm::translate(paddle_2_mod_matr, paddle_2_pos);
     paddle_2_mod_matr = glm::scale(paddle_2_mod_matr, PADDLE_DIM);
     /* ---------------- */
     
     /* ---- BALL ---- */
     ball_mod_matr = glm::mat4(1.0f);
-    ball_pos += SPEED * ball_mov * delta_time;
-    ball_mod_matr = glm::translate(ball_mod_matr, BALL_INIT_POS);
+    ball_pos += 5.0f * ball_mov * delta_time;
+    bounce();
+    ball_mod_matr = glm::translate(ball_mod_matr, ball_pos);
     ball_mod_matr = glm::scale(ball_mod_matr, BALL_DIM);
     /* ---------------- */
-    
-    
-    
     
 }
 // Part 4: Once updated, render those changes onto the screen
@@ -385,6 +369,49 @@ void shutdown() {
     SDL_JoystickClose(player_one_controller);
     SDL_JoystickClose(player_two_controller);
     SDL_Quit();
+}
+
+void bind(glm::vec3 &paddle_pos) {
+    if (std::abs(paddle_pos.y) > (ORTHO_HEIGHT - PADDLE_DIM.y)/2)
+        paddle_pos.y = paddle_pos.y > 0 ?
+            (ORTHO_HEIGHT - PADDLE_DIM.y)/2 :
+            (-ORTHO_HEIGHT + PADDLE_DIM.y)/2;
+}
+
+void bounce() {
+    // ball-wall bounce mechanics
+    if (std::abs(ball_pos.y) > (ORTHO_HEIGHT - BALL_DIM.y)/2) {
+        ball_mov.y *= -1;
+        ball_pos.y = ball_pos.y > 0 ?
+            (ORTHO_HEIGHT - BALL_DIM.y)/2 :
+            (-ORTHO_HEIGHT + BALL_DIM.y)/2;
+    }
+    if (std::abs(ball_pos.x) > (ORTHO_WIDTH - BALL_DIM.x)/2) {
+        ball_mov = glm::vec3(1.0f, 0.0f, 0.0f);
+        ball_pos = BALL_INIT_POS;
+    }
+    // ball-paddle bounce mechanics
+    glm::vec2 dist_1 =
+        glm::vec2(std::abs(paddle_1_pos.x - ball_pos.x) - (PADDLE_DIM.x + BALL_DIM.x) / 2,
+                  std::abs(paddle_1_pos.y - ball_pos.y) - (PADDLE_DIM.y + BALL_DIM.y) / 2);
+    glm::vec2 dist_2 =
+        glm::vec2(std::abs(paddle_2_pos.x - ball_pos.x) - (PADDLE_DIM.x + BALL_DIM.x) / 2,
+                  std::abs(paddle_2_pos.y - ball_pos.y) - (PADDLE_DIM.y + BALL_DIM.y) / 2);
+    
+    if(glm::all(glm::lessThanEqual(dist_1, ZERO))) {
+        ball_mov.x *= -1;
+        ball_mov.y = MAX_VERT_BALL_MOV *
+            ((ball_pos.y - paddle_1_pos.y) / (PADDLE_DIM.y/2));
+        ball_pos.x = paddle_1_pos.x + (PADDLE_DIM.x + BALL_DIM.x) / 2;
+    }
+    else if (glm::all(glm::lessThanEqual(dist_2, ZERO))) {
+        ball_mov *= -1;
+        ball_mov.y = MAX_VERT_BALL_MOV *
+            ((ball_pos.y - paddle_2_pos.y) / (PADDLE_DIM.y/2));
+        ball_pos.x = paddle_2_pos.x - (PADDLE_DIM.x + BALL_DIM.x)/2;
+    }
+    
+    
 }
 
 
