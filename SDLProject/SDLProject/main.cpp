@@ -93,6 +93,7 @@ float       g_prev_ticks           = 0.0f;
 const float PADDLE_SCALE = 1.0f;
 
 bool SINGLE_PLAYER;
+size_t SCORE;
 
 const glm::vec3 PADDLE_1_INIT_POS = glm::vec3(-4.25f, 0.0f, 0.0f),
                 PADDLE_DIM      = glm::vec3( .25f, 1.0f, 0.0f),
@@ -111,7 +112,7 @@ glm::vec3 paddle_1_pos  = PADDLE_1_INIT_POS,
           paddle_2_mov  = glm::vec3(0.0f, 0.0f, 0.0f),
           ball_pos      = BALL_INIT_POS,
           ball_mov      = glm::vec3(0.0f, 0.0f, 0.0f);
-const float SPEED = 6.0f;
+const float SPEED = 6.5f;
 const float MAX_REL_ANGLE = 60.0f;
 const float MAX_REL_ANGLE_RAD = MAX_REL_ANGLE * (M_PI / 180.0f);
 const float MAX_VERT_BALL_MOV = std::tan(MAX_REL_ANGLE_RAD);
@@ -156,6 +157,10 @@ void draw_object(glm::mat4 &object_model_matrix);
 void bounce();
 
 void bind(glm::vec3 &paddle_pos);
+
+void new_game();
+
+void reset_ball();
 
 // The game will reside inside the main
 int main(int argc, char* argv[]) {
@@ -236,6 +241,7 @@ void initialise() {
     g_program.SetColor(PADDLE_RED, PADDLE_BLUE, PADDLE_GREEN, 1.0f);
     
     /* ---- PADDLE 1 ---- */
+    SCORE = 0;
     SINGLE_PLAYER = false;
     paddle_1_mod_matr = glm::mat4(1.0f);
     paddle_1_mod_matr = glm::translate(paddle_1_mod_matr, PADDLE_1_INIT_POS);
@@ -252,7 +258,6 @@ void initialise() {
     ball_mod_matr = glm::mat4(1.0f);
     ball_mod_matr = glm::translate(ball_mod_matr, BALL_INIT_POS);
     ball_mod_matr = glm::scale(ball_mod_matr, BALL_DIM);
-    ball_mov.x = 1.0f;
     /* ---------------- */
     
     g_program.SetViewMatrix(g_view_matr);
@@ -281,6 +286,13 @@ void process_input() {
     
     const Uint8 *key_state = SDL_GetKeyboardState(NULL);
 
+    if (key_state[SDL_SCANCODE_P]) {
+        if (ball_mov.x != 0) reset_ball();
+        else ball_mov.x = 1.0f;
+    }
+    
+    if (key_state[SDL_SCANCODE_E]) shutdown();
+    
     if (key_state[SDL_SCANCODE_T])
         SINGLE_PLAYER = not SINGLE_PLAYER;
 
@@ -299,16 +311,17 @@ void process_input() {
     } else
         paddle_2_mov.y = paddle_2_pos.y > ball_pos.y ? -1.0f : 1.0f;
 
-        
-
     paddle_1_mov.x = 0;
     paddle_2_mov.x = 0;
 
     // This makes sure that the player can't "cheat" their way into moving faster
+    // doesn't apply to this project tho because I want it to go faster in certain situations
 //    if (glm::length(paddle_1_mov) > 1.0f)
 //        paddle_1_mov = glm::normalize(paddle_1_mov);
 //    if (glm::length(paddle_2_mov) > 1.0f)
 //        paddle_2_mov = glm::normalize(paddle_2_mov);
+//    if (glm::length(ball_mov) > 1.0f)
+//        ball_mov = glm::normalize(ball_mov);
 }
 
 void update() {
@@ -317,11 +330,6 @@ void update() {
     float delta_time = ticks - g_prev_ticks;        // time since last frame
     g_prev_ticks = ticks;
     /* ------------------------ */
-    
-    if (not SINGLE_PLAYER) {
-        
-    }
-    
     
     /* ---- PADDLE 1 ---- */
     paddle_1_mod_matr = glm::mat4(1.0f);
@@ -401,8 +409,7 @@ void bounce() {
             (-ORTHO_HEIGHT + BALL_DIM.y)/2;
     }
     if (std::abs(ball_pos.x) > (ORTHO_WIDTH - BALL_DIM.x)/2) {
-        ball_mov = glm::vec3(1.0f, 0.0f, 0.0f);
-        ball_pos = BALL_INIT_POS;
+        reset_ball();
     }
     // ball-paddle bounce mechanics
     glm::vec2 dist_1 =
@@ -414,16 +421,21 @@ void bounce() {
     
     if(glm::all(glm::lessThanEqual(dist_1, ZERO))) {
         ball_mov.x *= -1;
-        ball_mov.y = MAX_VERT_BALL_MOV *
+        ball_mov.y = MAX_VERT_BALL_MOV * .9f *
             ((ball_pos.y - paddle_1_pos.y) / (PADDLE_DIM.y/2));
         ball_pos.x = paddle_1_pos.x + (PADDLE_DIM.x + BALL_DIM.x) / 2;
     }
     else if (glm::all(glm::lessThanEqual(dist_2, ZERO))) {
         ball_mov *= -1;
-        ball_mov.y = MAX_VERT_BALL_MOV *
+        ball_mov.y = MAX_VERT_BALL_MOV * .9f *
             ((ball_pos.y - paddle_2_pos.y) / (PADDLE_DIM.y/2));
         ball_pos.x = paddle_2_pos.x - (PADDLE_DIM.x + BALL_DIM.x)/2;
     }
     
     
+}
+
+void reset_ball() {
+    ball_mov = glm::vec3(0.0f);
+    ball_pos = BALL_INIT_POS;
 }
