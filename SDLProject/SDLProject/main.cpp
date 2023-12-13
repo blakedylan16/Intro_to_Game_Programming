@@ -1,3 +1,14 @@
+/**
+* Author: Dylan Blake
+* Assignment: Pong Clone
+* Date due: 2023-10-14, 11:59pm
+* I pledge that I have completed this assignment without
+* collaborating with anyone else, in conformance with the
+* NYU School of Engineering Policies and Procedures on
+* Academic Misconduct.
+**/
+
+
 // The old stuff
 #define GL_SILENCE_DEPRECIATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -93,7 +104,6 @@ float       g_prev_ticks           = 0.0f;
 const float PADDLE_SCALE = 1.0f;
 
 bool SINGLE_PLAYER;
-size_t SCORE;
 
 const glm::vec3 PADDLE_1_INIT_POS = glm::vec3(-4.25f, 0.0f, 0.0f),
                 PADDLE_DIM      = glm::vec3( .25f, 1.0f, 0.0f),
@@ -239,9 +249,7 @@ void initialise() {
                                      -ORTHO_DIM.y, ORTHO_DIM.y,
                                      -ORTHO_DIM.z, ORTHO_DIM.z);
     g_program.SetColor(PADDLE_RED, PADDLE_BLUE, PADDLE_GREEN, 1.0f);
-    
     /* ---- PADDLE 1 ---- */
-    SCORE = 0;
     SINGLE_PLAYER = false;
     paddle_1_mod_matr = glm::mat4(1.0f);
     paddle_1_mod_matr = glm::translate(paddle_1_mod_matr, PADDLE_1_INIT_POS);
@@ -431,8 +439,6 @@ void bounce() {
             ((ball_pos.y - paddle_2_pos.y) / (PADDLE_DIM.y/2));
         ball_pos.x = paddle_2_pos.x - (PADDLE_DIM.x + BALL_DIM.x)/2;
     }
-    
-    
 }
 
 void reset_ball() {
