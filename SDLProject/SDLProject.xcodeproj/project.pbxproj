@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B67CC9A22B0488AD00EBC2B1 /* helper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B67CC9A12B0488AD00EBC2B1 /* helper.cpp */; };
+		B666A2B02B2BA322003E8B70 /* assets in CopyFiles */ = {isa = PBXBuildFile; fileRef = B67D76852B294A1000DEF7EA /* assets */; };
 		B67D76432B23FB8A00DEF7EA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBDF1B642323DEDF007CECB1 /* Cocoa.framework */; };
 		B67D76442B23FB8A00DEF7EA /* Cocoa.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DBDF1B642323DEDF007CECB1 /* Cocoa.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B67D76462B23FB8B00DEF7EA /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBDF1B622323DEDA007CECB1 /* OpenGL.framework */; };
@@ -18,7 +18,7 @@
 		B67D764B2B23FB8D00DEF7EA /* SDL2_mixer.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DBDF1B682323DEEA007CECB1 /* SDL2_mixer.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B67D764C2B23FB8E00DEF7EA /* SDL2.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBDF1B662323DEEA007CECB1 /* SDL2.framework */; };
 		B67D764D2B23FB8E00DEF7EA /* SDL2.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DBDF1B662323DEEA007CECB1 /* SDL2.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		B67D76812B29302B00DEF7EA /* pong.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B67D76802B29302B00DEF7EA /* pong.cpp */; };
+		B67D76842B29449000DEF7EA /* Entity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B67D76822B29449000DEF7EA /* Entity.cpp */; };
 		DBDF1B532323DE3F007CECB1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDF1B522323DE3F007CECB1 /* main.cpp */; };
 		DBDF1B5E2323DE8D007CECB1 /* ShaderProgram.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DBDF1B5D2323DE8D007CECB1 /* ShaderProgram.cpp */; };
 		DBDF1B612323DE9E007CECB1 /* shaders in CopyFiles */ = {isa = PBXBuildFile; fileRef = DBDF1B5C2323DE8D007CECB1 /* shaders */; };
@@ -47,6 +47,7 @@
 			dstSubfolderSpec = 6;
 			files = (
 				DBDF1B612323DE9E007CECB1 /* shaders in CopyFiles */,
+				B666A2B02B2BA322003E8B70 /* assets in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -55,6 +56,9 @@
 /* Begin PBXFileReference section */
 		B67CC9A12B0488AD00EBC2B1 /* helper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = helper.cpp; sourceTree = "<group>"; };
 		B67D76802B29302B00DEF7EA /* pong.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = pong.cpp; sourceTree = "<group>"; };
+		B67D76822B29449000DEF7EA /* Entity.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Entity.cpp; sourceTree = "<group>"; };
+		B67D76832B29449000DEF7EA /* Entity.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Entity.hpp; sourceTree = "<group>"; };
+		B67D76852B294A1000DEF7EA /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = "<group>"; };
 		DBDF1B4F2323DE3F007CECB1 /* SDLProject */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SDLProject; sourceTree = BUILT_PRODUCTS_DIR; };
 		DBDF1B522323DE3F007CECB1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		DBDF1B592323DE8D007CECB1 /* ShaderProgram.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShaderProgram.h; sourceTree = "<group>"; };
@@ -113,6 +117,9 @@
 				DBDF1B522323DE3F007CECB1 /* main.cpp */,
 				B67CC9A12B0488AD00EBC2B1 /* helper.cpp */,
 				B67D76802B29302B00DEF7EA /* pong.cpp */,
+				B67D76822B29449000DEF7EA /* Entity.cpp */,
+				B67D76832B29449000DEF7EA /* Entity.hpp */,
+				B67D76852B294A1000DEF7EA /* assets */,
 			);
 			path = SDLProject;
 			sourceTree = "<group>";
@@ -188,9 +195,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				DBDF1B532323DE3F007CECB1 /* main.cpp in Sources */,
-				B67D76812B29302B00DEF7EA /* pong.cpp in Sources */,
 				DBDF1B5E2323DE8D007CECB1 /* ShaderProgram.cpp in Sources */,
-				B67CC9A22B0488AD00EBC2B1 /* helper.cpp in Sources */,
+				B67D76842B29449000DEF7EA /* Entity.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -326,7 +332,9 @@
 					/Library/Frameworks/SDL2_image.framework/Versions/A/Headers,
 					/Library/Frameworks/SDL2.framework/Versions/A/Headers,
 					/Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers,
+					"$(PROJECT_DIR)/assets",
 				);
+				LIBRARY_SEARCH_PATHS = "/Users/dylanblake/Developer/IntroGameProg/**";
 				MACOSX_DEPLOYMENT_TARGET = 11.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -349,7 +357,9 @@
 					/Library/Frameworks/SDL2_image.framework/Versions/A/Headers,
 					/Library/Frameworks/SDL2.framework/Versions/A/Headers,
 					/Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers,
+					"$(PROJECT_DIR)/assets",
 				);
+				LIBRARY_SEARCH_PATHS = "/Users/dylanblake/Developer/IntroGameProg/**";
 				MACOSX_DEPLOYMENT_TARGET = 11.3;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
