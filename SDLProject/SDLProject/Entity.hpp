@@ -1,11 +1,10 @@
-//
-//  Entity.hpp
-//  SDLProject
-//
-//  Created by Dylan Blake on 12/12/23.
-//  Copyright © 2023 ctg. All rights reserved.
-//
+/// Dylan Blake
+///  12.15.23
+///  Intro to Game Programming CS 3113
+///  Professor Sebastian Romero Cruz (they/them)
+///
 
+enum EntityType { PLATFORM, PLAYER, ENEMY };
 
 class Entity {
 private:
@@ -14,14 +13,19 @@ private:
         *m_animationUp    = NULL, // move upwards
         *m_animationDown  = NULL; // move downwards
     
-    // ————— TRANSFORMATIONS ————— //
-    glm::vec3   m_position;
-    glm::vec3   m_movement;
+    /* ----- TRANSFORMATIONS ------ */
+    glm::vec3   m_position,
+                m_movement,
+                m_velocity,
+                m_acceleration;
     glm::mat4   m_modelMatrix;
     float       m_speed;
     
-    // ----- TEXTURES ----- //
+    /* ----- TEXTURES ----- */
     GLuint m_textureID;
+    
+    int m_width     = 1,
+        m_height    = 1;
     
 public:
     // ————— STATIC VARIABLES ————— //
@@ -52,7 +56,7 @@ public:
     ~Entity();
 
     void drawSprite(ShaderProgram *program, GLuint textureID, int index);
-    void update(float deltaTime);
+    void update(float deltaTimem, Entity* collidables, int collidablesCount);
     void render(ShaderProgram* program);
     
     void moveLeft()     { m_movement.x = -1.0f; };
@@ -60,15 +64,23 @@ public:
     void moveUp()       { m_movement.y =  1.0f; };
     void moveDown()     { m_movement.y = -1.0f; };
     
+    bool const checkCollison(Entity *other) const;
+    
     // ————— GETTERS ————— //
-    glm::vec3 const getPosition()   const { return m_position; };
-    glm::vec3 const getMovement()   const { return m_movement; };
-    float const getSpeed()          const { return m_speed; };
-    GLuint const getTextureID()     const { return m_textureID; };
+    glm::vec3 const getPosition()       const { return m_position; };
+    glm::vec3 const getMovement()       const { return m_movement; };
+    glm::vec3 const getVelocity()       const { return m_velocity; };
+    glm::vec3 const getAcceleration()   const { return m_acceleration; };
+    float const getSpeed()              const { return m_speed; };
+    
+    GLuint const getTextureID()         const { return m_textureID; };
     
     // ————— SETTERS ————— //
-    void const setPosition(glm::vec3 newPosition) { m_position = newPosition; };
-    void const setMovement(glm::vec3 newMovement) { m_movement = newMovement; };
-    void const setSpeed(float newSpeed) { m_speed = newSpeed; };
-    void const setTextureID(GLuint newID) { m_textureID = newID; };
+    void const setPosition(glm::vec3 newPos)        { m_position = newPos; };
+    void const setMovement(glm::vec3 newMov)        { m_movement = newMov; };
+    void const setVelocity(glm::vec3 newVel)        { m_velocity = newVel; };
+    void const setAcceleration(glm::vec3 newAccel)  { m_acceleration = newAccel; };
+    void const setSpeed(float newSpeed)             { m_speed = newSpeed; };
+    
+    void const setTextureID(GLuint newID)           { m_textureID = newID; };
 };

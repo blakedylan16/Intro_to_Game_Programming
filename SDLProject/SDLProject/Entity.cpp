@@ -21,9 +21,12 @@
 #include "Entity.hpp"
 
 Entity::Entity() {
-    m_position = glm::vec3(0);
-    m_speed = 0;
-    m_modelMatrix = glm::mat4(1.0f);
+    m_position      = glm::vec3(0);
+    m_acceleration  = glm::vec3{0.0f};
+    m_velocity      = glm::vec3{0.0f};
+    m_speed = 1.0f;
+    
+    m_modelMatrix   = glm::mat4(1.0f);
 }
 
 Entity::~Entity() {
@@ -75,7 +78,7 @@ void Entity::drawSprite(ShaderProgram *program,
     glDisableVertexAttribArray(program->texCoordAttribute);
 }
 
-void Entity::update(float deltaTime) {
+void Entity::update(float deltaTime, Entity* collidables, int collidablesCount) {
     if (m_animationIndices) {
         if (glm::length(m_movement) != 0) {
             m_animationTime += deltaTime;
@@ -91,9 +94,22 @@ void Entity::update(float deltaTime) {
         }
     }
     
-    m_position += m_movement * m_speed * deltaTime;
+    m_velocity.x = m_movement.x * m_speed;
+    m_velocity += m_acceleration * deltaTime;
+    m_position += m_velocity * deltaTime;
+    
     m_modelMatrix = glm::mat4(1.0f);
     m_modelMatrix = glm::translate(m_modelMatrix, m_position);
+    
+    for (size_t i = 0; i < collidablesCount; i++){
+        
+        Entity* collidable = &collidables[i];
+        
+        if (checkCollison(collidable)) {
+            float yDistance = fabs(m_position.y - collidable->m_position.y);
+            float yOverlap = fabs(yDistance - (m_height / 2.0f) - (collidable->m_height / 2.0f));
+        }
+    }
 }
 
 void Entity::render(ShaderProgram *program) {
@@ -135,6 +151,15 @@ void Entity::render(ShaderProgram *program) {
         
     glDisableVertexAttribArray(program->positionAttribute);
     glDisableVertexAttribArray(program->texCoordAttribute);
+}
+
+bool const Entity::checkCollison(Entity* other) const {
+    float xDistance =
+        fabs(m_position.x - other->m_position.x) - ((m_width + other->m_width) / 2.0f);
+    float yDistance =
+        fabs(m_position.y - other->m_position.y) - ((m_height + other->m_height) / 2.0f);
+    
+    return xDistance < 0.0f && yDistance < 0.0f;
 }
 
 //void draw_text(ShaderProgram *program, GLuint fontTextureID, std::string text, float screenSize, float spacing, glm::vec3 position) {

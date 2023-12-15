@@ -11,6 +11,9 @@
 #define GL_SILENCE_DEPRECIATION
 #define GL_GLEXT_PROTOTYPES 1
 #define NUMBER_OF_ENEMIES 3
+#define FIXED_TIMESTEP 0.0166666f
+#define ACC_OF_GRAVITY -9.81f
+#define PLATFORM_COUNT 3
 
 #ifdef _WINDOWS
 #include <GL/glew.h>
@@ -31,6 +34,7 @@
 struct GameState {
     Entity* player;
     Entity* enemies[NUMBER_OF_ENEMIES];
+    Entity* platforms;
 };
 
 const int WINDOW_WIDTH  = 640,
@@ -58,7 +62,7 @@ const char F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 const float MILLISECONDS_IN_SECOND = 1000.0;
 
 const char  SPRITESHEET_FILEPATH[]  = "assets/george_0.png",
-            ENEMY_FILEPATH[]      = "assets/flower.png";
+            PLATFORM_FILEPATH[]      = "assets/flower.png";
 
 const int NUMBER_OF_TEXTURES = 1;
 const GLint LEVEL_OF_DETAIL = 0,
@@ -75,7 +79,7 @@ ShaderProgram g_program;
 glm::mat4 g_viewMatrix, g_projectionMatrix;
 
 float g_previousTicks = 0.0f;
-
+float g_timeAccumulator = 0.0f;
 
 GLuint loadTexture(const char* filepath);
 
@@ -146,6 +150,8 @@ void playerInit() {
     
     g_gameState.player->setPosition(glm::vec3(0.0f));
     g_gameState.player->setMovement(glm::vec3(0.0f));
+    g_gameState.player->setAcceleration(glm::vec3(0.0f, ACC_OF_GRAVITY, 0.0f));
+    
     g_gameState.player->setSpeed(1.0f);
     g_gameState.player->setTextureID(loadTexture(SPRITESHEET_FILEPATH));
         
@@ -167,18 +173,16 @@ void playerInit() {
     g_gameState.player->m_animationRows     = 4;
 }
 
-void enemyInit() {
-    GLuint enemyTextureID = loadTexture(ENEMY_FILEPATH);
+void platformsInit() {
+    GLuint platformTextureID = loadTexture(PLATFORM_FILEPATH);
     
-    for (int i = 0; i < NUMBER_OF_ENEMIES; i++) {
-        g_gameState.enemies[i] = new Entity();
-        g_gameState.enemies[i]->setSpeed(1.0f);
-        g_gameState.enemies[i]->setTextureID(enemyTextureID);
+    g_gameState.platforms = new Entity[PLATFORM_COUNT];
+    
+    for (int i = 0; i < PLATFORM_COUNT; i++) {
+        g_gameState.platforms[i].setTextureID(platformTextureID);
+        g_gameState.platforms[i].setPosition(glm::vec3(i - 1.0f, -3.0f, 0.0f));
+        g_gameState.platforms[i].update(0.0f, NULL, 0);
     }
-    // Giving them random starting positions
-    g_gameState.enemies[0]->setPosition(glm::vec3(0.0f, -2.0f, 0.0f));
-    g_gameState.enemies[1]->setPosition(glm::vec3(-2.0f, -2.0f, 0.0f));
-    g_gameState.enemies[2]->setPosition(glm::vec3(2.0f, -2.0f, 0.0f));
 }
 
 void Initialise() {
@@ -211,8 +215,10 @@ void Initialise() {
     
     glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
     
+    platformsInit();
     playerInit();
-    enemyInit();
+    
+
     
     // enable blending
     glEnable(GL_BLEND);
@@ -266,17 +272,35 @@ void ProcessInput() {
 }
 
 void Update() {
+    /* ----- DELTA TIME ----- */
     float ticks = (float) SDL_GetTicks() / MILLISECONDS_IN_SECOND;
     float deltaTime = ticks - g_previousTicks;
     g_previousTicks = ticks;
     
-    g_gameState.player->update(deltaTime);
-    for (int i = 0; i < NUMBER_OF_ENEMIES; i++)
-        g_gameState.enemies[i]->update(deltaTime);
+    /* ----- FIXED TIMESTEP ----- */
+    deltaTime += g_timeAccumulator;
+    if (deltaTime < FIXED_TIMESTEP) {
+        g_timeAccumulator = deltaTime;
+        return;
+    }
+    
+    while (deltaTime >= FIXED_TIMESTEP)
+    {
+        g_gameState.player->update(FIXED_TIMESTEP, g_gameState.platforms, PLATFORM_COUNT);
+        deltaTime -= FIXED_TIMESTEP;
+    }
+    
+    g_timeAccumulator = deltaTime;
+    
+//    for (int i = 0; i < NUMBER_OF_ENEMIES; i++)
+//        g_gameState.enemies[i]->update(deltaTime);
 }
 
 void Render() {
     glClear(GL_COLOR_BUFFER_BIT);
+    
+    for (size_t i = 0; i < PLATFORM_COUNT; i++)
+        g_gameState.platforms[i].render(&g_program);
     
     g_gameState.player->render(&g_program);
     for (int i = 0; i < NUMBER_OF_ENEMIES; i++)
