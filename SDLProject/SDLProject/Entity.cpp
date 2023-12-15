@@ -18,7 +18,6 @@
 #include "glm/mat4x4.hpp"               // 4x4 Matrix
 #include "glm/gtc/matrix_transform.hpp" // Matrix transformation methods
 #include "ShaderProgram.h"
-
 #include "Entity.hpp"
 
 Entity::Entity() {
@@ -37,15 +36,13 @@ Entity::~Entity() {
 
 void Entity::drawSprite(ShaderProgram *program,
                         GLuint textureID, int index) {
-
+    // Calculate the UV location of the indexed frame
     float UCoord = (float) (index % m_animationCols) / (float) m_animationCols,
           VCoord = (float) (index / m_animationCols) / (float) m_animationRows;
-    
-    
+    // Calculate its UV size
     float width  = 1.0f / (float) m_animationCols,
           height = 1.0f / (float) m_animationRows;
-    
-    // Step 3: Just as we have done before, match the texture coordinates to the vertices
+    // Match the texture coordinates to the vertices
     float texCoords[] = {
         UCoord, VCoord + height,
         UCoord + width, VCoord + height,
@@ -54,7 +51,6 @@ void Entity::drawSprite(ShaderProgram *program,
         UCoord + width, VCoord,
         UCoord, VCoord
     };
-    
     float vertices[] = {
         -0.5, -0.5,
          0.5, -0.5,
@@ -64,7 +60,7 @@ void Entity::drawSprite(ShaderProgram *program,
         -0.5,  0.5
     };
     
-    // Step 4: And render
+    // Render
     glBindTexture(GL_TEXTURE_2D, textureID);
     
     glVertexAttribPointer(program->positionAttribute, 2, GL_FLOAT, false, 0, vertices);
@@ -84,16 +80,13 @@ void Entity::update(float deltaTime) {
         if (glm::length(m_movement) != 0) {
             m_animationTime += deltaTime;
             float framesPerSecond = (float) 1 / SECONDS_PER_FRAME;
-            
-            if (m_animationTime >= framesPerSecond)
-            {
+        
+            if (m_animationTime >= framesPerSecond) {
                 m_animationTime = 0.0f;
                 m_animationIndex++;
                 
                 if (m_animationIndex >= m_animationFrames)
-                {
                     m_animationIndex = 0;
-                }
             }
         }
     }
@@ -107,9 +100,11 @@ void Entity::render(ShaderProgram *program) {
     
     program->SetModelMatrix(m_modelMatrix);
     
-    if (m_animationIndices)
+    if (m_animationIndices) {
         drawSprite(program, m_textureID,
                    m_animationIndices[m_animationIndex]);
+        return;
+    }
     
     float vertices[] = {
         -0.5f, -0.5, 
@@ -119,7 +114,6 @@ void Entity::render(ShaderProgram *program) {
         0.5,  0.5,
         -0.5, 0.5
     };
-    
     float texCoords[] = {
         0.0f, 1.0f, 
         1.0f, 1.0f,
@@ -142,8 +136,6 @@ void Entity::render(ShaderProgram *program) {
     glDisableVertexAttribArray(program->positionAttribute);
     glDisableVertexAttribArray(program->texCoordAttribute);
 }
-
-
 
 //void draw_text(ShaderProgram *program, GLuint fontTextureID, std::string text, float screenSize, float spacing, glm::vec3 position) {
 //    // Scale the size of the fontbank in the UV-plane

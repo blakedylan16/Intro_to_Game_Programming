@@ -92,9 +92,7 @@ void Render();
 // Part 5: Shutdown protocol once game is over
 void shutdown();
 
-void drawObject(glm::mat4 &object_model_matrix, GLuint &object_texture_id);
-
-void playerInit(Entity* player);
+void playerInit(Entity** player);
 
 void enemyInit();
 
@@ -112,7 +110,6 @@ int main(int argc, char* argv[]) {
     shutdown();
     return 0;
 }
-
              
 GLuint loadTexture(const char* filepath) {
     int width, height, numComponents;
@@ -129,7 +126,8 @@ GLuint loadTexture(const char* filepath) {
     GLuint textureID;
     glGenTextures(NUMBER_OF_TEXTURES, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
-    glTexImage2D(GL_TEXTURE_2D, LEVEL_OF_DETAIL, GL_RGBA, width, height, TEXTURE_BORDER, GL_RGBA, GL_UNSIGNED_BYTE, image);
+    glTexImage2D(GL_TEXTURE_2D, LEVEL_OF_DETAIL, GL_RGBA, width, height,
+                 TEXTURE_BORDER, GL_RGBA, GL_UNSIGNED_BYTE, image);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -142,31 +140,31 @@ GLuint loadTexture(const char* filepath) {
     return textureID;
 }
 
-void playerInit(Entity* player) {
+void playerInit() {
     
-    player = new Entity();
+    g_gameState.player = new Entity();
     
-    player->setPosition(glm::vec3(0.0f));
-    player->setMovement(glm::vec3(0.0f));
-    player->setSpeed(1.0f);
-    player->setTextureID(loadTexture(SPRITESHEET_FILEPATH));
+    g_gameState.player->setPosition(glm::vec3(0.0f));
+    g_gameState.player->setMovement(glm::vec3(0.0f));
+    g_gameState.player->setSpeed(1.0f);
+    g_gameState.player->setTextureID(loadTexture(SPRITESHEET_FILEPATH));
         
-    player->m_walking[player->LEFT] =
+    g_gameState.player->m_walking[g_gameState.player->LEFT] =
         new int[4] { 1, 5,  9, 13 };
-    player->m_walking[player->RIGHT] =
+    g_gameState.player->m_walking[g_gameState.player->RIGHT] =
         new int[4] { 3, 7, 11, 15 };
-    player->m_walking[player->UP] =
+    g_gameState.player->m_walking[g_gameState.player->UP] =
         new int[4] { 2, 6, 10, 14 };
-    player->m_walking[player->DOWN] =
+    g_gameState.player->m_walking[g_gameState.player->DOWN] =
         new int[4] { 4, 8, 12, 16 };
         
-    player->m_animationIndices =
-        player->m_walking[player->DOWN];
-    player->m_animationFrames   = 4;
-    player->m_animationIndex    = 0;
-    player->m_animationTime     = 0.0f;
-    player->m_animationCols     = 4;
-    player->m_animationRows     = 4;
+    g_gameState.player->m_animationIndices =
+        g_gameState.player->m_walking[g_gameState.player->DOWN];
+    g_gameState.player->m_animationFrames   = 4;
+    g_gameState.player->m_animationIndex    = 0;
+    g_gameState.player->m_animationTime     = 0.0f;
+    g_gameState.player->m_animationCols     = 4;
+    g_gameState.player->m_animationRows     = 4;
 }
 
 void enemyInit() {
@@ -174,8 +172,8 @@ void enemyInit() {
     
     for (int i = 0; i < NUMBER_OF_ENEMIES; i++) {
         g_gameState.enemies[i] = new Entity();
-        g_gameState.enemies[i]->m_speed = 1.0f;
-        g_gameState.enemies[i]->m_textureID = enemyTextureID;
+        g_gameState.enemies[i]->setSpeed(1.0f);
+        g_gameState.enemies[i]->setTextureID(enemyTextureID);
     }
     // Giving them random starting positions
     g_gameState.enemies[0]->setPosition(glm::vec3(0.0f, -2.0f, 0.0f));
@@ -213,7 +211,7 @@ void Initialise() {
     
     glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
     
-    playerInit(g_gameState.player);
+    playerInit();
     enemyInit();
     
     // enable blending
@@ -222,6 +220,9 @@ void Initialise() {
 }
 
 void ProcessInput() {
+    
+    g_gameState.player->setMovement(glm::vec3(0.0f));
+    
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
@@ -229,9 +230,39 @@ void ProcessInput() {
             case SDL_WINDOWEVENT_CLOSE:
                 g_gameIsRunning = false;
                 break;
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym) {
+                    case SDLK_q: g_gameIsRunning = false;
+                    default: break;
+                }
             default: break;
         }
     }
+    
+    const Uint8 *keyState = SDL_GetKeyboardState(NULL);
+    
+    if (keyState[SDL_SCANCODE_LEFT]) {
+        g_gameState.player->moveLeft();
+        g_gameState.player->m_animationIndices =
+            g_gameState.player->m_walking[g_gameState.player->LEFT];
+    } else if (keyState[SDL_SCANCODE_RIGHT]) {
+        g_gameState.player->moveRight();
+        g_gameState.player -> m_animationIndices =
+            g_gameState.player->m_walking[g_gameState.player->RIGHT];
+    }
+    
+    if (keyState[SDL_SCANCODE_UP]) {
+        g_gameState.player->moveUp();
+        g_gameState.player->m_animationIndices =
+            g_gameState.player->m_walking[g_gameState.player->UP];
+    } else if (keyState[SDL_SCANCODE_DOWN]) {
+        g_gameState.player->moveDown();
+        g_gameState.player -> m_animationIndices =
+            g_gameState.player->m_walking[g_gameState.player->DOWN];
+    }
+    
+    if (glm::length(g_gameState.player->getMovement()) > 1.0f)
+        g_gameState.player->setMovement(glm::normalize(g_gameState.player->getMovement()));
 }
 
 void Update() {
@@ -254,6 +285,11 @@ void Render() {
     SDL_GL_SwapWindow(g_displayWindow);
 }
 
-void shutdown() { SDL_Quit(); }
+void shutdown() {
+    SDL_Quit();
+    delete g_gameState.player;
+    for (size_t i = 0; i < NUMBER_OF_ENEMIES; i++)
+        delete g_gameState.enemies[i];
+}
 
 
