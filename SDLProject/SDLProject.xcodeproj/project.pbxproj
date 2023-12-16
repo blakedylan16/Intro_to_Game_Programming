@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B666A2B02B2BA322003E8B70 /* assets in CopyFiles */ = {isa = PBXBuildFile; fileRef = B67D76852B294A1000DEF7EA /* assets */; };
+		B666A2B32B2E30D9003E8B70 /* Lunar_Landing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B666A2B12B2E30D9003E8B70 /* Lunar_Landing.cpp */; };
 		B67D76432B23FB8A00DEF7EA /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBDF1B642323DEDF007CECB1 /* Cocoa.framework */; };
 		B67D76442B23FB8A00DEF7EA /* Cocoa.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = DBDF1B642323DEDF007CECB1 /* Cocoa.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B67D76462B23FB8B00DEF7EA /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DBDF1B622323DEDA007CECB1 /* OpenGL.framework */; };
@@ -54,6 +55,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B666A2B12B2E30D9003E8B70 /* Lunar_Landing.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Lunar_Landing.cpp; sourceTree = "<group>"; };
+		B666A2B22B2E30D9003E8B70 /* Lunar_Landing.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Lunar_Landing.hpp; sourceTree = "<group>"; };
 		B67CC9A12B0488AD00EBC2B1 /* helper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = helper.cpp; sourceTree = "<group>"; };
 		B67D76802B29302B00DEF7EA /* pong.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = pong.cpp; sourceTree = "<group>"; };
 		B67D76822B29449000DEF7EA /* Entity.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Entity.cpp; sourceTree = "<group>"; };
@@ -120,6 +123,8 @@
 				B67D76822B29449000DEF7EA /* Entity.cpp */,
 				B67D76832B29449000DEF7EA /* Entity.hpp */,
 				B67D76852B294A1000DEF7EA /* assets */,
+				B666A2B12B2E30D9003E8B70 /* Lunar_Landing.cpp */,
+				B666A2B22B2E30D9003E8B70 /* Lunar_Landing.hpp */,
 			);
 			path = SDLProject;
 			sourceTree = "<group>";
@@ -194,6 +199,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B666A2B32B2E30D9003E8B70 /* Lunar_Landing.cpp in Sources */,
 				DBDF1B532323DE3F007CECB1 /* main.cpp in Sources */,
 				DBDF1B5E2323DE8D007CECB1 /* ShaderProgram.cpp in Sources */,
 				B67D76842B29449000DEF7EA /* Entity.cpp in Sources */,

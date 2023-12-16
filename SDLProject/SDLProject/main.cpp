@@ -12,8 +12,8 @@
 #define GL_GLEXT_PROTOTYPES 1
 #define NUMBER_OF_ENEMIES 3
 #define FIXED_TIMESTEP 0.0166666f
-#define ACC_OF_GRAVITY -9.81f
-#define PLATFORM_COUNT 3
+#define ACC_OF_GRAVITY -3.0f
+#define PLATFORM_COUNT 10
 
 #ifdef _WINDOWS
 #include <GL/glew.h>
@@ -29,12 +29,13 @@
 #include "cmath"
 #include <ctime>
 #include <vector>
+#include <cstdlib>
 
 // ----- STRUCTS AND ENUMS ----- //
 struct GameState {
     Entity* player;
-    Entity* enemies[NUMBER_OF_ENEMIES];
     Entity* platforms;
+    Entity* enemies;
 };
 
 const int WINDOW_WIDTH  = 640,
@@ -62,7 +63,8 @@ const char F_SHADER_PATH[] = "shaders/fragment_textured.glsl";
 const float MILLISECONDS_IN_SECOND = 1000.0;
 
 const char  SPRITESHEET_FILEPATH[]  = "assets/george_0.png",
-            PLATFORM_FILEPATH[]      = "assets/flower.png";
+            PLATFORM_FILEPATH[]     = "assets/platform_tile.png",
+            ENEMIES_FILEPATH[]      = "assets/Minotaur2.png";
 
 const int NUMBER_OF_TEXTURES = 1;
 const GLint LEVEL_OF_DETAIL = 0,
@@ -98,7 +100,7 @@ void shutdown();
 
 void playerInit(Entity** player);
 
-void enemyInit();
+void platformsInit(Entity** platforms);
 
 // The game will reside inside the main
 int main(int argc, char* argv[]) {
@@ -147,12 +149,14 @@ GLuint loadTexture(const char* filepath) {
 void playerInit() {
     
     g_gameState.player = new Entity();
+    g_gameState.player->type = PLAYER;
     
     g_gameState.player->setPosition(glm::vec3(0.0f));
     g_gameState.player->setMovement(glm::vec3(0.0f));
     g_gameState.player->setAcceleration(glm::vec3(0.0f, ACC_OF_GRAVITY, 0.0f));
-    
     g_gameState.player->setSpeed(1.0f);
+    g_gameState.player->m_jumpingPower = 4.0f;
+    
     g_gameState.player->setTextureID(loadTexture(SPRITESHEET_FILEPATH));
         
     g_gameState.player->m_walking[g_gameState.player->LEFT] =
@@ -171,6 +175,9 @@ void playerInit() {
     g_gameState.player->m_animationTime     = 0.0f;
     g_gameState.player->m_animationCols     = 4;
     g_gameState.player->m_animationRows     = 4;
+    
+    g_gameState.player->setHeight(0.8f);
+    g_gameState.player->setWidth(0.9f);
 }
 
 void platformsInit() {
@@ -178,12 +185,21 @@ void platformsInit() {
     
     g_gameState.platforms = new Entity[PLATFORM_COUNT];
     
+//    int limit = PLATFORM_COUNT;
+//    int randomInt = rand() % limit;
     for (int i = 0; i < PLATFORM_COUNT; i++) {
+        g_gameState.platforms[i].type = PLATFORM;
+        
         g_gameState.platforms[i].setTextureID(platformTextureID);
-        g_gameState.platforms[i].setPosition(glm::vec3(i - 1.0f, -3.0f, 0.0f));
+        g_gameState.platforms[i].setWidth(0.2f);
+        g_gameState.platforms[i].setPosition(glm::vec3(i - 4.5f, -3.0f, 0.0f));
         g_gameState.platforms[i].update(0.0f, NULL, 0);
     }
 }
+
+//void enemiesInit(Entity** enemies) {
+//
+//}
 
 void Initialise() {
     SDL_Init(SDL_INIT_VIDEO);
@@ -217,10 +233,7 @@ void Initialise() {
     
     platformsInit();
     playerInit();
-    
 
-    
-    // enable blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
@@ -238,7 +251,14 @@ void ProcessInput() {
                 break;
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
-                    case SDLK_q: g_gameIsRunning = false;
+                    case SDLK_SPACE:
+                        if (g_gameState.player->m_collidedBottom)
+                            g_gameState.player->m_isJumping = true;
+                        break;
+                        
+                    case SDLK_q:
+                        g_gameIsRunning = false;
+                        break;
                     default: break;
                 }
             default: break;
@@ -255,16 +275,6 @@ void ProcessInput() {
         g_gameState.player->moveRight();
         g_gameState.player -> m_animationIndices =
             g_gameState.player->m_walking[g_gameState.player->RIGHT];
-    }
-    
-    if (keyState[SDL_SCANCODE_UP]) {
-        g_gameState.player->moveUp();
-        g_gameState.player->m_animationIndices =
-            g_gameState.player->m_walking[g_gameState.player->UP];
-    } else if (keyState[SDL_SCANCODE_DOWN]) {
-        g_gameState.player->moveDown();
-        g_gameState.player -> m_animationIndices =
-            g_gameState.player->m_walking[g_gameState.player->DOWN];
     }
     
     if (glm::length(g_gameState.player->getMovement()) > 1.0f)
@@ -291,9 +301,6 @@ void Update() {
     }
     
     g_timeAccumulator = deltaTime;
-    
-//    for (int i = 0; i < NUMBER_OF_ENEMIES; i++)
-//        g_gameState.enemies[i]->update(deltaTime);
 }
 
 void Render() {
@@ -303,17 +310,10 @@ void Render() {
         g_gameState.platforms[i].render(&g_program);
     
     g_gameState.player->render(&g_program);
-    for (int i = 0; i < NUMBER_OF_ENEMIES; i++)
-        g_gameState.enemies[i]->render(&g_program);
     
     SDL_GL_SwapWindow(g_displayWindow);
 }
 
-void shutdown() {
-    SDL_Quit();
-    delete g_gameState.player;
-    for (size_t i = 0; i < NUMBER_OF_ENEMIES; i++)
-        delete g_gameState.enemies[i];
-}
+void shutdown() { SDL_Quit(); }
 
 

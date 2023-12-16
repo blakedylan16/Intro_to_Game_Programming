@@ -21,10 +21,15 @@
 #include "Entity.hpp"
 
 Entity::Entity() {
+    /* ----- PHYSICS ----- */
     m_position      = glm::vec3(0);
     m_acceleration  = glm::vec3{0.0f};
     m_velocity      = glm::vec3{0.0f};
-    m_speed = 1.0f;
+    m_isJumping     = false;
+    
+    /* ----- TRANSLATION -----*/
+    m_movement = glm::vec3(0.0f);
+    m_speed = 0;
     
     m_modelMatrix   = glm::mat4(1.0f);
 }
@@ -40,11 +45,11 @@ Entity::~Entity() {
 void Entity::drawSprite(ShaderProgram *program,
                         GLuint textureID, int index) {
     // Calculate the UV location of the indexed frame
-    float UCoord = (float) (index % m_animationCols) / (float) m_animationCols,
-          VCoord = (float) (index / m_animationCols) / (float) m_animationRows;
+    float UCoord = (float)(index % m_animationCols) / (float)m_animationCols,
+          VCoord = (float)(index / m_animationCols) / (float)m_animationRows;
     // Calculate its UV size
-    float width  = 1.0f / (float) m_animationCols,
-          height = 1.0f / (float) m_animationRows;
+    float width  = 1.0f / (float)m_animationCols,
+          height = 1.0f / (float)m_animationRows;
     // Match the texture coordinates to the vertices
     float texCoords[] = {
         UCoord, VCoord + height,
@@ -79,6 +84,14 @@ void Entity::drawSprite(ShaderProgram *program,
 }
 
 void Entity::update(float deltaTime, Entity* collidables, int collidablesCount) {
+    
+    if (!m_isActive) return;
+    
+    m_collidedTop = false;
+    m_collidedBottom = false;
+    m_collidedLeft = false;
+    m_collidedRight = false;
+    
     if (m_animationIndices) {
         if (glm::length(m_movement) != 0) {
             m_animationTime += deltaTime;
@@ -94,20 +107,92 @@ void Entity::update(float deltaTime, Entity* collidables, int collidablesCount) 
         }
     }
     
+    /* ----- GRAVITY ----- */
     m_velocity.x = m_movement.x * m_speed;
     m_velocity += m_acceleration * deltaTime;
-    m_position += m_velocity * deltaTime;
     
+    m_position.y += m_velocity.y * deltaTime;
+    checkCollisonY(collidables, collidablesCount);
+    m_position.x += m_velocity.x * deltaTime;
+    checkCollisonX(collidables, collidablesCount);
+    
+    /* ----- JUMPING ----- */
+    if (m_isJumping) {
+        m_isJumping = false;
+        m_velocity.y += m_jumpingPower;
+    }
+    
+    /* ----- TRANSFORMATIONS ----- */
     m_modelMatrix = glm::mat4(1.0f);
     m_modelMatrix = glm::translate(m_modelMatrix, m_position);
+}
+
+
+bool const Entity::checkCollision(Entity* other) const {
+    
+    if (other == this) return false;
+    
+    if (!m_isActive or not other->m_isActive) return false;
+
+    float xDistance =
+        fabs(m_position.x - other->m_position.x) -
+        ((m_width + other->m_width) / 2.0f);
+    float yDistance =
+        fabs(m_position.y - other->m_position.y) -
+        ((m_height + other->m_height) / 2.0f);
+    
+    return xDistance < 0.0f and yDistance < 0.0f;
+}
+
+void const Entity::checkCollisonX(Entity* collidables,
+                                  int collidablesCount) {
     
     for (size_t i = 0; i < collidablesCount; i++){
         
         Entity* collidable = &collidables[i];
         
-        if (checkCollison(collidable)) {
+        if (checkCollision(collidable)) {
+            float xDistance = fabs(m_position.x - collidable->m_position.x);
+            float xOverlap =
+                fabs(xDistance - (m_width / 2.0f) - (collidable->m_width / 2.0f));
+            
+            if (m_velocity.x > 0) {
+                m_position.x -= xOverlap;
+                m_velocity.x = 0;
+                m_collidedRight = true;
+            } else if (m_velocity.x < 0) {
+                m_position.x += xOverlap;
+                m_velocity.x = 0;
+                m_collidedLeft = true;
+            }
+        }
+    }
+}
+
+void const Entity::checkCollisonY(Entity* collidables,
+                                  int collidablesCount) {
+    
+    for (size_t i = 0; i < collidablesCount; i++){
+        
+        Entity* collidable = &collidables[i];
+        
+        if (checkCollision(collidable)) {
+            
+            if (collidable->type == ENEMY) collidable->m_isActive = false;
+            
             float yDistance = fabs(m_position.y - collidable->m_position.y);
-            float yOverlap = fabs(yDistance - (m_height / 2.0f) - (collidable->m_height / 2.0f));
+            float yOverlap =
+                fabs(yDistance - (m_height / 2.0f) - (collidable->m_height / 2.0f));
+            
+            if (m_velocity.y > 0) {
+                m_position.y -= yOverlap;
+                m_velocity.y = 0;
+                m_collidedTop = true;
+            } else if (m_velocity.y < 0) {
+                m_position.y += yOverlap;
+                m_velocity.y = 0;
+                m_collidedBottom = true;
+            }
         }
     }
 }
@@ -116,6 +201,8 @@ void Entity::render(ShaderProgram *program) {
     
     program->SetModelMatrix(m_modelMatrix);
     
+    if (!m_isActive) return;
+    
     if (m_animationIndices) {
         drawSprite(program, m_textureID,
                    m_animationIndices[m_animationIndex]);
@@ -123,15 +210,15 @@ void Entity::render(ShaderProgram *program) {
     }
     
     float vertices[] = {
-        -0.5f, -0.5, 
+        -0.5f, -0.5,
         0.5, -0.5,
         0.5, 0.5,
-        -0.5f, -0.5f, 
+        -0.5f, -0.5f,
         0.5,  0.5,
         -0.5, 0.5
     };
     float texCoords[] = {
-        0.0f, 1.0f, 
+        0.0f, 1.0f,
         1.0f, 1.0f,
         1.0f, 0.0f,
         0.0f, 1.0f,
@@ -152,72 +239,3 @@ void Entity::render(ShaderProgram *program) {
     glDisableVertexAttribArray(program->positionAttribute);
     glDisableVertexAttribArray(program->texCoordAttribute);
 }
-
-bool const Entity::checkCollison(Entity* other) const {
-    float xDistance =
-        fabs(m_position.x - other->m_position.x) - ((m_width + other->m_width) / 2.0f);
-    float yDistance =
-        fabs(m_position.y - other->m_position.y) - ((m_height + other->m_height) / 2.0f);
-    
-    return xDistance < 0.0f && yDistance < 0.0f;
-}
-
-//void draw_text(ShaderProgram *program, GLuint fontTextureID, std::string text, float screenSize, float spacing, glm::vec3 position) {
-//    // Scale the size of the fontbank in the UV-plane
-//    // We will use this for spacing and positioning
-//    float width = 1.0f / FONTBANK_SIZE;
-//    float height = 1.0f / FONTBANK_SIZE;
-//
-//    // Instead of having a single pair of arrays, we'll have a series of pairs—one for each character
-//    // Don't forget to include <vector>!
-//    std::vector<float> vertices;
-//    std::vector<float> textureCoordinates;
-//
-//    // For every character...
-//    for (int i = 0; i < text.size(); i++) {
-//        // 1. Get their index in the spritesheet, as well as their offset (i.e. their position
-//        //    relative to the whole sentence)
-//        int spritesheetIndex = (int) text[i];  // ascii value of character
-//        float offset = (screenSize + spacing) * i;
-//
-//        // 2. Using the spritesheet index, we can calculate our U- and V-coordinates
-//        float UCoordinate = (float) (spritesheetIndex % FONTBANK_SIZE) / FONTBANK_SIZE;
-//        float VCoordinate = (float) (spritesheetIndex / FONTBANK_SIZE) / FONTBANK_SIZE;
-//
-//        // 3. Inset the current pair in both vectors
-//        vertices.insert(vertices.end(), {
-//            offset + (-0.5f * screenSize), 0.5f * screenSize,
-//            offset + (-0.5f * screenSize), -0.5f * screenSize,
-//            offset + (0.5f * screenSize), 0.5f * screenSize,
-//            offset + (0.5f * screenSize), -0.5f * screenSize,
-//            offset + (0.5f * screenSize), 0.5f * screenSize,
-//            offset + (-0.5f * screenSize), -0.5f * screenSize,
-//        });
-//
-//        textureCoordinates.insert(textureCoordinates.end(), {
-//            UCoordinate, VCoordinate,
-//            UCoordinate, VCoordinate + height,
-//            UCoordinate + width, VCoordinate,
-//            UCoordinate + width, VCoordinate + height,
-//            UCoordinate + width, VCoordinate,
-//            UCoordinate, VCoordinate + height,
-//        });
-//    }
-//
-//    glm::mat4 modelMatr = glm::mat4(1.0f);
-//    modelMatr = glm::translate(modelMatr, position);
-//
-//    program->SetModelMatrix(modelMatr);
-//    glUseProgram(program->programID);
-//
-//    glVertexAttribPointer(program->positionAttribute, 2, GL_FLOAT, false, 0, vertices.data());
-//    glEnableVertexAttribArray(program->positionAttribute);
-//    glVertexAttribPointer(program->texCoordAttribute, 2, GL_FLOAT, false, 0, textureCoordinates.data());
-//    glEnableVertexAttribArray(program->texCoordAttribute);
-//
-//    glBindTexture(GL_TEXTURE_2D, fontTextureID);
-//    glDrawArrays(GL_TRIANGLES, 0, (int) (text.size() * 6));
-//
-//    glDisableVertexAttribArray(program->positionAttribute);
-//    glDisableVertexAttribArray(program->texCoordAttribute);
-//}
