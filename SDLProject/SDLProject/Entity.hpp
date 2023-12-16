@@ -18,7 +18,8 @@ private:
     /* ----- PHYSICS ------ */
     glm::vec3   m_position,
                 m_velocity,
-                m_acceleration;
+                m_acceleration,
+                m_defaultAcceleration;
     
     /* ----- TRANSFORMATIONS ----- */
     glm::vec3 m_movement;
@@ -57,8 +58,7 @@ public:
     int  *m_animationIndices = NULL;
     float m_animationTime    = 0.0f;
 
-    float m_jumpingPower = 0;
-    bool m_isJumping;
+    float m_flyingPower = 0;
     
     bool m_collidedTop      = false,
          m_collidedBottom   = false,
@@ -70,7 +70,9 @@ public:
     ~Entity();
 
     void drawSprite(ShaderProgram *program, GLuint textureID, int index);
-    void update(float deltaTimem, Entity* collidables, int collidablesCount);
+    void update(float deltaTime = 0.0f,
+                Entity* platforms = NULL, int platformCount = 0,
+                Entity* enemies = NULL, int enemyCount = 0);
     void render(ShaderProgram* program);
     
     void moveLeft()     { m_movement.x = -1.0f; };
@@ -78,9 +80,14 @@ public:
     void moveUp()       { m_movement.y =  1.0f; };
     void moveDown()     { m_movement.y = -1.0f; };
 
-    bool const checkCollision(Entity* collidables) const;
+    bool const checkCollision(Entity* other) const;
     void const checkCollisonX(Entity* collidables, int collidablesCount);
     void const checkCollisonY(Entity* collidables, int collidablesCount);
+    
+    void const activate()   { m_isActive = true; };
+    void const deactivate() { m_isActive = false; };
+    
+//    void const restoreAccel() { m_acceleration = m_defaultAcceleration; };
     
     /* ————— GETTERS ————— */
     glm::vec3 const getPosition()       const { return m_position; };
@@ -99,7 +106,9 @@ public:
     void const setMovement(glm::vec3 mov)       { m_movement = mov; };
     void const setVelocity(glm::vec3 vel)       { m_velocity = vel; };
     void const setAcceleration(glm::vec3 accel) { m_acceleration = accel; };
+    void const setDefAccel(glm::vec3 accel)     { m_defaultAcceleration = accel; };
     void const setSpeed(float speed)            { m_speed = speed; };
+    void const setFlyingPower(float power)      { m_flyingPower = power; };
     
     void const setHeight(float newHeight)   { m_height = newHeight; };
     void const setWidth(float newWidth)     { m_width = newWidth; };

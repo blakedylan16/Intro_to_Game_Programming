@@ -12,7 +12,7 @@
 #define GL_GLEXT_PROTOTYPES 1
 #define NUMBER_OF_ENEMIES 3
 #define FIXED_TIMESTEP 0.0166666f
-#define ACC_OF_GRAVITY -3.0f
+#define ACC_OF_GRAVITY -2.0f
 #define PLATFORM_COUNT 10
 
 #ifdef _WINDOWS
@@ -64,7 +64,7 @@ const float MILLISECONDS_IN_SECOND = 1000.0;
 
 const char  SPRITESHEET_FILEPATH[]  = "assets/george_0.png",
             PLATFORM_FILEPATH[]     = "assets/platform_tile.png",
-            ENEMIES_FILEPATH[]      = "assets/Minotaur2.png";
+            ENEMY_FILEPATH[]      = "assets/Minotaur2.png";
 
 const int NUMBER_OF_TEXTURES = 1;
 const GLint LEVEL_OF_DETAIL = 0,
@@ -83,6 +83,8 @@ glm::mat4 g_viewMatrix, g_projectionMatrix;
 float g_previousTicks = 0.0f;
 float g_timeAccumulator = 0.0f;
 
+const glm::vec3 environAccel = glm::vec3(0.0f, ACC_OF_GRAVITY, 0.0f);
+
 GLuint loadTexture(const char* filepath);
 
 // Part1: Initialise our program
@@ -98,9 +100,9 @@ void Render();
 // Part 5: Shutdown protocol once game is over
 void shutdown();
 
-void playerInit(Entity** player);
+void playerInit();
 
-void platformsInit(Entity** platforms);
+void platformsInit();
 
 // The game will reside inside the main
 int main(int argc, char* argv[]) {
@@ -151,11 +153,11 @@ void playerInit() {
     g_gameState.player = new Entity();
     g_gameState.player->type = PLAYER;
     
-    g_gameState.player->setPosition(glm::vec3(0.0f));
+    g_gameState.player->setPosition(glm::vec3(0.0f, 3.0f, 0.0f));
     g_gameState.player->setMovement(glm::vec3(0.0f));
-    g_gameState.player->setAcceleration(glm::vec3(0.0f, ACC_OF_GRAVITY, 0.0f));
-    g_gameState.player->setSpeed(1.0f);
-    g_gameState.player->m_jumpingPower = 4.0f;
+    g_gameState.player->setAcceleration(environAccel);
+    g_gameState.player->setDefAccel(environAccel);
+    g_gameState.player->setFlyingPower(6.0f);
     
     g_gameState.player->setTextureID(loadTexture(SPRITESHEET_FILEPATH));
         
@@ -185,21 +187,37 @@ void platformsInit() {
     
     g_gameState.platforms = new Entity[PLATFORM_COUNT];
     
-//    int limit = PLATFORM_COUNT;
-//    int randomInt = rand() % limit;
     for (int i = 0; i < PLATFORM_COUNT; i++) {
         g_gameState.platforms[i].type = PLATFORM;
         
         g_gameState.platforms[i].setTextureID(platformTextureID);
-        g_gameState.platforms[i].setWidth(0.2f);
-        g_gameState.platforms[i].setPosition(glm::vec3(i - 4.5f, -3.0f, 0.0f));
-        g_gameState.platforms[i].update(0.0f, NULL, 0);
+        g_gameState.platforms[i].setHeight(1.0f);
+        g_gameState.platforms[i].setWidth(0.5f);
+        
+        g_gameState.platforms[i].setPosition(glm::vec3(i - 4.5f, -3.6f, 0.0f));
+        g_gameState.platforms[i].update();
     }
 }
 
-//void enemiesInit(Entity** enemies) {
-//
-//}
+void enemiesInit() {
+    GLuint enemiesTextureID = loadTexture(ENEMY_FILEPATH);
+    
+    g_gameState.enemies = new Entity[NUMBER_OF_ENEMIES];
+    
+    for (int i = 0; i < NUMBER_OF_ENEMIES; i++ ) {
+        g_gameState.enemies[i].type = ENEMY;
+        g_gameState.enemies[i].setTextureID(enemiesTextureID);
+        g_gameState.enemies[i].setHeight(.8f);
+        g_gameState.enemies[i].setWidth(.9f);
+        g_gameState.enemies[i].setMovement(glm::vec3(0.0f));
+        g_gameState.enemies[i].setAcceleration(environAccel);
+        g_gameState.enemies[i].setDefAccel(environAccel);
+    }
+    
+    g_gameState.enemies[0].setPosition(glm::vec3(-2.0f, -2.0f, 0.0f));
+    g_gameState.enemies[1].setPosition(glm::vec3(-0.0f, -2.0f, 0.0f));
+    g_gameState.enemies[2].setPosition(glm::vec3(3.0f, -2.0f, 0.0f));
+}
 
 void Initialise() {
     SDL_Init(SDL_INIT_VIDEO);
@@ -232,6 +250,7 @@ void Initialise() {
     glClearColor(BG_RED, BG_BLUE, BG_GREEN, BG_OPACITY);
     
     platformsInit();
+    enemiesInit();
     playerInit();
 
     glEnable(GL_BLEND);
@@ -251,11 +270,6 @@ void ProcessInput() {
                 break;
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
-                    case SDLK_SPACE:
-                        if (g_gameState.player->m_collidedBottom)
-                            g_gameState.player->m_isJumping = true;
-                        break;
-                        
                     case SDLK_q:
                         g_gameIsRunning = false;
                         break;
@@ -275,10 +289,14 @@ void ProcessInput() {
         g_gameState.player->moveRight();
         g_gameState.player -> m_animationIndices =
             g_gameState.player->m_walking[g_gameState.player->RIGHT];
+    } else if (keyState[SDL_SCANCODE_SPACE]) {
+        g_gameState.player->moveUp();
+        g_gameState.player -> m_animationIndices =
+            g_gameState.player-> m_walking[g_gameState.player->DOWN];
     }
     
-    if (glm::length(g_gameState.player->getMovement()) > 1.0f)
-        g_gameState.player->setMovement(glm::normalize(g_gameState.player->getMovement()));
+//    if (glm::length(g_gameState.player->getMovement()) > 1.0f)
+//        g_gameState.player->setMovement(glm::normalize(g_gameState.player->getMovement()));
 }
 
 void Update() {
@@ -294,9 +312,13 @@ void Update() {
         return;
     }
     
-    while (deltaTime >= FIXED_TIMESTEP)
-    {
-        g_gameState.player->update(FIXED_TIMESTEP, g_gameState.platforms, PLATFORM_COUNT);
+    while (deltaTime >= FIXED_TIMESTEP) {
+        g_gameState.player->update(FIXED_TIMESTEP,
+                                   g_gameState.platforms, PLATFORM_COUNT,
+                                   g_gameState.enemies, NUMBER_OF_ENEMIES);
+        for (int i = 0; i < NUMBER_OF_ENEMIES; i++)
+            g_gameState.enemies[i].update(FIXED_TIMESTEP,
+                                          g_gameState.platforms, PLATFORM_COUNT);
         deltaTime -= FIXED_TIMESTEP;
     }
     
@@ -308,6 +330,9 @@ void Render() {
     
     for (size_t i = 0; i < PLATFORM_COUNT; i++)
         g_gameState.platforms[i].render(&g_program);
+    
+    for (size_t i = 0; i < NUMBER_OF_ENEMIES; i++)
+        g_gameState.enemies[i].render(&g_program);
     
     g_gameState.player->render(&g_program);
     

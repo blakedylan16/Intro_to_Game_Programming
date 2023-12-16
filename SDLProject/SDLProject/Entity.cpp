@@ -25,11 +25,9 @@ Entity::Entity() {
     m_position      = glm::vec3(0);
     m_acceleration  = glm::vec3{0.0f};
     m_velocity      = glm::vec3{0.0f};
-    m_isJumping     = false;
     
     /* ----- TRANSLATION -----*/
     m_movement = glm::vec3(0.0f);
-    m_speed = 0;
     
     m_modelMatrix   = glm::mat4(1.0f);
 }
@@ -83,7 +81,9 @@ void Entity::drawSprite(ShaderProgram *program,
     glDisableVertexAttribArray(program->texCoordAttribute);
 }
 
-void Entity::update(float deltaTime, Entity* collidables, int collidablesCount) {
+void Entity::update(float deltaTime,
+                    Entity* platforms, int platformCount,
+                    Entity* enemies, int enemyCount) {
     
     if (!m_isActive) return;
     
@@ -108,19 +108,21 @@ void Entity::update(float deltaTime, Entity* collidables, int collidablesCount) 
     }
     
     /* ----- GRAVITY ----- */
-    m_velocity.x = m_movement.x * m_speed;
+    /*
+     pretending application of force is instant, therefore
+     change in acceleration is instant
+     */
+    
+    m_acceleration = m_movement * m_flyingPower + m_defaultAcceleration;
     m_velocity += m_acceleration * deltaTime;
     
-    m_position.y += m_velocity.y * deltaTime;
-    checkCollisonY(collidables, collidablesCount);
-    m_position.x += m_velocity.x * deltaTime;
-    checkCollisonX(collidables, collidablesCount);
+    checkCollisonY(platforms, platformCount);
+    checkCollisonX(platforms, platformCount);
     
-    /* ----- JUMPING ----- */
-    if (m_isJumping) {
-        m_isJumping = false;
-        m_velocity.y += m_jumpingPower;
-    }
+    checkCollisonY(enemies, enemyCount);
+    checkCollisonX(enemies, enemyCount);
+    
+    m_position += m_velocity * deltaTime;
     
     /* ----- TRANSFORMATIONS ----- */
     m_modelMatrix = glm::mat4(1.0f);
@@ -156,11 +158,11 @@ void const Entity::checkCollisonX(Entity* collidables,
             float xOverlap =
                 fabs(xDistance - (m_width / 2.0f) - (collidable->m_width / 2.0f));
             
-            if (m_velocity.x > 0) {
+            if (m_velocity.x > 0.1f) {
                 m_position.x -= xOverlap;
                 m_velocity.x = 0;
                 m_collidedRight = true;
-            } else if (m_velocity.x < 0) {
+            } else if (m_velocity.x < 0.1f) {
                 m_position.x += xOverlap;
                 m_velocity.x = 0;
                 m_collidedLeft = true;
@@ -178,17 +180,15 @@ void const Entity::checkCollisonY(Entity* collidables,
         
         if (checkCollision(collidable)) {
             
-            if (collidable->type == ENEMY) collidable->m_isActive = false;
-            
             float yDistance = fabs(m_position.y - collidable->m_position.y);
             float yOverlap =
                 fabs(yDistance - (m_height / 2.0f) - (collidable->m_height / 2.0f));
             
-            if (m_velocity.y > 0) {
+            if  (m_velocity.y > 0.1f) {
                 m_position.y -= yOverlap;
                 m_velocity.y = 0;
                 m_collidedTop = true;
-            } else if (m_velocity.y < 0) {
+            } else if (m_velocity.y < 0.1f) {
                 m_position.y += yOverlap;
                 m_velocity.y = 0;
                 m_collidedBottom = true;
@@ -204,8 +204,7 @@ void Entity::render(ShaderProgram *program) {
     if (!m_isActive) return;
     
     if (m_animationIndices) {
-        drawSprite(program, m_textureID,
-                   m_animationIndices[m_animationIndex]);
+        drawSprite(program, m_textureID, m_animationIndices[m_animationIndex]);
         return;
     }
     
