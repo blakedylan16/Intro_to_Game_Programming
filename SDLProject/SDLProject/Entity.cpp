@@ -23,8 +23,8 @@
 Entity::Entity() {
     /* ----- PHYSICS ----- */
     m_position      = glm::vec3(0);
-    m_acceleration  = glm::vec3{0.0f};
-    m_velocity      = glm::vec3{0.0f};
+    m_acceleration  = glm::vec3(0.0f);
+    m_velocity      = glm::vec3(0.0f);
     
     /* ----- TRANSLATION -----*/
     m_movement  = glm::vec3(0.0f);

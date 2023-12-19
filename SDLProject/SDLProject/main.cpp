@@ -10,7 +10,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #define GL_SILENCE_DEPRECIATION
 #define GL_GLEXT_PROTOTYPES 1
-#define NUMBER_OF_ENEMIES 3
+#define NUMBER_OF_ENEMIES 2
 #define FIXED_TIMESTEP 0.0166666f
 #define ACC_OF_GRAVITY -2.0f
 #define PLATFORM_COUNT 10
@@ -75,6 +75,9 @@ const GLint LEVEL_OF_DETAIL = 0,
 
 GameState g_gameState;
 
+bool    missionAccomplished = false,
+        missionFailed       = false;
+
 SDL_Window* g_displayWindow;
 bool g_gameIsRunning = true;
 
@@ -107,6 +110,9 @@ void shutdown();
 void playerInit();
 
 void platformsInit();
+
+void drawText(ShaderProgram *program, GLuint fontTextureID, std::string text,
+              float screenSize, float spacing, glm::vec3 position);
 
 // The game will reside inside the main
 int main(int argc, char* argv[]) {
@@ -193,6 +199,8 @@ void platformsInit() {
     g_gameState.platforms = new Entity[PLATFORM_COUNT];
     
     for (int i = 0; i < PLATFORM_COUNT; i++) {
+        
+        
         g_gameState.platforms[i].type = PLATFORM;
         g_gameState.platforms[i].activate();
         
@@ -200,7 +208,6 @@ void platformsInit() {
         g_gameState.platforms[i].setHeight(1.0f);
         g_gameState.platforms[i].setWidth(0.5f);
         g_gameState.platforms[i].setScale(glm::vec3(1.0f, .75f, 1.0f));
-        
         g_gameState.platforms[i].setPosition(glm::vec3(i - 4.5f, -3.6f, 0.0f));
         g_gameState.platforms[i].update();
     }
@@ -224,8 +231,7 @@ void enemiesInit() {
     }
     
     g_gameState.enemies[0].setPosition(glm::vec3(-2.0f, -2.0f, 0.0f));
-    g_gameState.enemies[1].setPosition(glm::vec3(-0.0f, -2.0f, 0.0f));
-    g_gameState.enemies[2].setPosition(glm::vec3(3.0f, -2.0f, 0.0f));
+    g_gameState.enemies[1].setPosition(glm::vec3(3.0f, -2.0f, 0.0f));
 }
 
 void Initialise() {
@@ -337,11 +343,9 @@ void Update() {
     
     if (not g_gameState.player->getActiveState()) {
         if (g_gameState.player->getEnemyCollison())
-            drawText(g_program, fontTextureID, "Mission Failed",
-                     <#float screenSize#>, <#float spacing#>, <#glm::vec3 position#>);
+            missionFailed = true;
         else
-            drawText(g_program, fontTextureID, "Mission Accomplished",
-                     <#float screenSize#>, <#float spacing#>, <#glm::vec3 position#>);
+            missionAccomplished = true;
     }
 }
 
@@ -356,13 +360,22 @@ void Render() {
     
     g_gameState.player->render(&g_program);
     
+    
+    if (missionFailed) {
+        drawText(&g_program, fontTextureID, std::string("Mission Failed"),
+                 .4f, .0f, glm::vec3(-2.3f, 1.0f, 0.0f));
+    } else if (missionAccomplished) {
+        drawText(&g_program, fontTextureID, std::string("Mission Accomplished"),
+                 .4f, .0f, glm::vec3(-3.5f, 1.0f, 0.0f));
+    }
+    
     SDL_GL_SwapWindow(g_displayWindow);
 }
 
 void shutdown() { SDL_Quit(); }
 
-void drawText(ShaderProgram *program, GLuint fontTextureID,
-              std::string text, float screenSize, float spacing, glm::vec3 position) {
+void drawText(ShaderProgram *program, GLuint fontTextureID, std::string text,
+              float screenSize, float spacing, glm::vec3 position) {
     // Scale the size of the fontbank in the UV-plane
     // We will use this for spacing and positioning
     float width = 1.0f / FONTBANK_SIZE;
