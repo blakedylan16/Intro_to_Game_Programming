@@ -27,7 +27,8 @@ Entity::Entity() {
     m_velocity      = glm::vec3{0.0f};
     
     /* ----- TRANSLATION -----*/
-    m_movement = glm::vec3(0.0f);
+    m_movement  = glm::vec3(0.0f);
+    m_scale     = glm::vec3(1.0f);
     
     m_modelMatrix   = glm::mat4(1.0f);
 }
@@ -116,17 +117,37 @@ void Entity::update(float deltaTime,
     m_acceleration = m_movement * m_flyingPower + m_defaultAcceleration;
     m_velocity += m_acceleration * deltaTime;
     
-    checkCollisonY(platforms, platformCount);
-    checkCollisonX(platforms, platformCount);
+    if (type == ENEMY) {
+        checkCollisonY(platforms, platformCount);
+        checkCollisonX(platforms, platformCount);
+        
+        checkCollisonY(enemies, enemyCount);
+        checkCollisonX(enemies, enemyCount);
+    }
     
-    checkCollisonY(enemies, enemyCount);
-    checkCollisonX(enemies, enemyCount);
+    for (size_t i = 0; i < platformCount; i++) {
+        Entity* platform = &platforms[i];
+        if (checkCollision(platform))
+            setPlatformCollision(true);
+    }
+    
+    for (size_t i = 0; i < enemyCount; i++) {
+        Entity* enemy = &enemies[i];
+        if (checkCollision(enemy))
+            setEnemyCollision(true);
+    }
+    
+    if (type == PLAYER and (getPlatformCollision() or getEnemyCollison())) {
+        deactivate();
+        return;
+    }
     
     m_position += m_velocity * deltaTime;
     
     /* ----- TRANSFORMATIONS ----- */
     m_modelMatrix = glm::mat4(1.0f);
     m_modelMatrix = glm::translate(m_modelMatrix, m_position);
+    m_modelMatrix = glm::scale(m_modelMatrix, m_scale);
 }
 
 
@@ -238,3 +259,4 @@ void Entity::render(ShaderProgram *program) {
     glDisableVertexAttribArray(program->positionAttribute);
     glDisableVertexAttribArray(program->texCoordAttribute);
 }
+

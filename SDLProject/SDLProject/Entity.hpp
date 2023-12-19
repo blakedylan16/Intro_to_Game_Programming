@@ -8,7 +8,7 @@ enum EntityType { PLATFORM, PLAYER, ENEMY };
 
 class Entity {
 private:
-    bool m_isActive = true;
+    bool m_isActive;
     
     int *m_animationRight = NULL, // move to the right
         *m_animationLeft  = NULL, // move to the left
@@ -22,7 +22,8 @@ private:
                 m_defaultAcceleration;
     
     /* ----- TRANSFORMATIONS ----- */
-    glm::vec3 m_movement;
+    glm::vec3   m_movement,
+                m_scale;
     glm::mat4   m_modelMatrix;
     float       m_speed;
     
@@ -65,6 +66,9 @@ public:
          m_collidedLeft     = false,
          m_collidedRight    = false;
     
+    bool    m_platformCollision = false,
+            m_enemyCollision    = false;
+    
     // ————— METHODS ————— //
     Entity();
     ~Entity();
@@ -84,14 +88,14 @@ public:
     void const checkCollisonX(Entity* collidables, int collidablesCount);
     void const checkCollisonY(Entity* collidables, int collidablesCount);
     
-    void const activate()   { m_isActive = true; };
-    void const deactivate() { m_isActive = false; };
-    
-//    void const restoreAccel() { m_acceleration = m_defaultAcceleration; };
+    void const activate()       { m_isActive = true; };
+    void const deactivate()     { m_isActive = false; };
+    bool const getActiveState() { return m_isActive; };
     
     /* ————— GETTERS ————— */
     glm::vec3 const getPosition()       const { return m_position; };
     glm::vec3 const getMovement()       const { return m_movement; };
+    glm::vec3 const getScale()          const { return m_scale; };
     glm::vec3 const getVelocity()       const { return m_velocity; };
     glm::vec3 const getAcceleration()   const { return m_acceleration; };
     float const getSpeed()              const { return m_speed; };
@@ -99,11 +103,15 @@ public:
     float const getHeight() const { return m_height; };
     float const getWidth()  const { return m_width; };
     
+    bool const getPlatformCollision()   { return m_platformCollision; };
+    bool const getEnemyCollison()       { return m_enemyCollision; };
+    
     GLuint const getTextureID()         const { return m_textureID; };
     
     /* ————— SETTERS ————— */
     void const setPosition(glm::vec3 pos)       { m_position = pos; };
     void const setMovement(glm::vec3 mov)       { m_movement = mov; };
+    void const setScale(glm::vec3 scale)        { m_scale = scale;}
     void const setVelocity(glm::vec3 vel)       { m_velocity = vel; };
     void const setAcceleration(glm::vec3 accel) { m_acceleration = accel; };
     void const setDefAccel(glm::vec3 accel)     { m_defaultAcceleration = accel; };
@@ -113,5 +121,9 @@ public:
     void const setHeight(float newHeight)   { m_height = newHeight; };
     void const setWidth(float newWidth)     { m_width = newWidth; };
     
+    void const setPlatformCollision(bool col)   { m_platformCollision = col; };
+    void const setEnemyCollision(bool col)      { m_enemyCollision = col; };
+    
     void const setTextureID(GLuint newID)           { m_textureID = newID; };
+    
 };

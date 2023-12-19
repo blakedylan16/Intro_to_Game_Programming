@@ -64,7 +64,8 @@ const float MILLISECONDS_IN_SECOND = 1000.0;
 
 const char  SPRITESHEET_FILEPATH[]  = "assets/george_0.png",
             PLATFORM_FILEPATH[]     = "assets/platform_tile.png",
-            ENEMY_FILEPATH[]      = "assets/Minotaur2.png";
+            ENEMY_FILEPATH[]        = "assets/Minotaur2.png",
+            FONT_FILEPATH[]         = "assets/font1.png";
 
 const int NUMBER_OF_TEXTURES = 1;
 const GLint LEVEL_OF_DETAIL = 0,
@@ -84,6 +85,9 @@ float g_previousTicks = 0.0f;
 float g_timeAccumulator = 0.0f;
 
 const glm::vec3 environAccel = glm::vec3(0.0f, ACC_OF_GRAVITY, 0.0f);
+
+const int FONTBANK_SIZE = 16;
+GLuint fontTextureID;
 
 GLuint loadTexture(const char* filepath);
 
@@ -152,6 +156,7 @@ void playerInit() {
     
     g_gameState.player = new Entity();
     g_gameState.player->type = PLAYER;
+    g_gameState.player->activate();
     
     g_gameState.player->setPosition(glm::vec3(0.0f, 3.0f, 0.0f));
     g_gameState.player->setMovement(glm::vec3(0.0f));
@@ -189,10 +194,12 @@ void platformsInit() {
     
     for (int i = 0; i < PLATFORM_COUNT; i++) {
         g_gameState.platforms[i].type = PLATFORM;
+        g_gameState.platforms[i].activate();
         
         g_gameState.platforms[i].setTextureID(platformTextureID);
         g_gameState.platforms[i].setHeight(1.0f);
         g_gameState.platforms[i].setWidth(0.5f);
+        g_gameState.platforms[i].setScale(glm::vec3(1.0f, .75f, 1.0f));
         
         g_gameState.platforms[i].setPosition(glm::vec3(i - 4.5f, -3.6f, 0.0f));
         g_gameState.platforms[i].update();
@@ -206,9 +213,11 @@ void enemiesInit() {
     
     for (int i = 0; i < NUMBER_OF_ENEMIES; i++ ) {
         g_gameState.enemies[i].type = ENEMY;
+        g_gameState.enemies[i].activate();
         g_gameState.enemies[i].setTextureID(enemiesTextureID);
-        g_gameState.enemies[i].setHeight(.8f);
-        g_gameState.enemies[i].setWidth(.9f);
+        g_gameState.enemies[i].setHeight(.9f);
+        g_gameState.enemies[i].setWidth(.55f);
+        g_gameState.enemies[i].setScale(glm::vec3(2.0f, 2.0f, 1.0f));
         g_gameState.enemies[i].setMovement(glm::vec3(0.0f));
         g_gameState.enemies[i].setAcceleration(environAccel);
         g_gameState.enemies[i].setDefAccel(environAccel);
@@ -252,6 +261,8 @@ void Initialise() {
     platformsInit();
     enemiesInit();
     playerInit();
+    
+    fontTextureID = loadTexture(FONT_FILEPATH);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -323,6 +334,15 @@ void Update() {
     }
     
     g_timeAccumulator = deltaTime;
+    
+    if (not g_gameState.player->getActiveState()) {
+        if (g_gameState.player->getEnemyCollison())
+            drawText(g_program, fontTextureID, "Mission Failed",
+                     <#float screenSize#>, <#float spacing#>, <#glm::vec3 position#>);
+        else
+            drawText(g_program, fontTextureID, "Mission Accomplished",
+                     <#float screenSize#>, <#float spacing#>, <#glm::vec3 position#>);
+    }
 }
 
 void Render() {
@@ -341,4 +361,65 @@ void Render() {
 
 void shutdown() { SDL_Quit(); }
 
+void drawText(ShaderProgram *program, GLuint fontTextureID,
+              std::string text, float screenSize, float spacing, glm::vec3 position) {
+    // Scale the size of the fontbank in the UV-plane
+    // We will use this for spacing and positioning
+    float width = 1.0f / FONTBANK_SIZE;
+    float height = 1.0f / FONTBANK_SIZE;
+
+    // Instead of having a single pair of arrays, we'll have a series of pairs—one for each character
+    // Don't forget to include <vector>!
+    std::vector<float> vertices;
+    std::vector<float> textureCoordinates;
+
+    // For every character...
+    for (int i = 0; i < text.size(); i++) {
+        // 1. Get their index in the spritesheet, as well as their offset (i.e. their position
+        //    relative to the whole sentence)
+        int spritesheetIndex = (int) text[i];  // ascii value of character
+        float offset = (screenSize + spacing) * i;
+        
+        // 2. Using the spritesheet index, we can calculate our U- and V-coordinates
+        float UCoordinate = (float) (spritesheetIndex % FONTBANK_SIZE) / FONTBANK_SIZE;
+        float VCoordinate = (float) (spritesheetIndex / FONTBANK_SIZE) / FONTBANK_SIZE;
+
+        // 3. Inset the current pair in both vectors
+        vertices.insert(vertices.end(), {
+            offset + (-0.5f * screenSize), 0.5f * screenSize,
+            offset + (-0.5f * screenSize), -0.5f * screenSize,
+            offset + (0.5f * screenSize), 0.5f * screenSize,
+            offset + (0.5f * screenSize), -0.5f * screenSize,
+            offset + (0.5f * screenSize), 0.5f * screenSize,
+            offset + (-0.5f * screenSize), -0.5f * screenSize,
+        });
+
+        textureCoordinates.insert(textureCoordinates.end(), {
+            UCoordinate, VCoordinate,
+            UCoordinate, VCoordinate + height,
+            UCoordinate + width, VCoordinate,
+            UCoordinate + width, VCoordinate + height,
+            UCoordinate + width, VCoordinate,
+            UCoordinate, VCoordinate + height,
+        });
+    }
+
+    // 4. And render all of them using the pairs
+    glm::mat4 modelMatrix = glm::mat4(1.0f);
+    modelMatrix = glm::translate(modelMatrix, position);
+    
+    program->SetModelMatrix(modelMatrix);
+    glUseProgram(program->programID);
+    
+    glVertexAttribPointer(program->positionAttribute, 2, GL_FLOAT, false, 0, vertices.data());
+    glEnableVertexAttribArray(program->positionAttribute);
+    glVertexAttribPointer(program->texCoordAttribute, 2, GL_FLOAT, false, 0, textureCoordinates.data());
+    glEnableVertexAttribArray(program->texCoordAttribute);
+    
+    glBindTexture(GL_TEXTURE_2D, fontTextureID);
+    glDrawArrays(GL_TRIANGLES, 0, (int) (text.size() * 6));
+    
+    glDisableVertexAttribArray(program->positionAttribute);
+    glDisableVertexAttribArray(program->texCoordAttribute);
+}
 
